@@ -1,7 +1,7 @@
 #include "game.h"
 
-#define SCREEN_WIDTH 240
-#define SCREEN_HEIGHT 180
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
 #define CHAR_WIDTH 2
 #define CHAR_HEIGHT 2
 

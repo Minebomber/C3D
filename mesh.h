@@ -17,20 +17,6 @@ typedef struct {
 	triangle* data;
 } mesh;
 
-
-
-bool vector_passes_clip(vec4 v) {
-	return (-v.w <= v.x) && (v.x <= v.w)
-		&& (-v.w <= v.y) && (v.y <= v.w)
-		&& (-v.w <= v.z) && (v.z <= v.w)
-		&& 0 < v.w;
-}
-
-bool triangle_passes_clip(triangle t) {
-	bool passes = vector_passes_clip(t.data[0]) || vector_passes_clip(t.data[1]) || vector_passes_clip(t.data[2]);
-	return passes;
-}
-
 int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2) {
 	planeN = vector_normalize(planeN);
 	
