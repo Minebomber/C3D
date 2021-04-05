@@ -17,6 +17,20 @@ typedef struct {
 	triangle* data;
 } mesh;
 
+
+
+bool vector_passes_clip(vec4 v) {
+	return (-v.w <= v.x) && (v.x <= v.w)
+		&& (-v.w <= v.y) && (v.y <= v.w)
+		&& (-v.w <= v.z) && (v.z <= v.w)
+		&& 0 < v.w;
+}
+
+bool triangle_passes_clip(triangle t) {
+	bool passes = vector_passes_clip(t.data[0]) || vector_passes_clip(t.data[1]) || vector_passes_clip(t.data[2]);
+	return passes;
+}
+
 int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2) {
 	planeN = vector_normalize(planeN);
 	
@@ -77,9 +91,9 @@ int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1
 	return 0;
 }
 
-int triangle_compare(void* a, void* b) {
-	triangle* t1 = a;
-	triangle* t2 = b;
+int triangle_compare(const void* a, const void* b) {
+	const triangle* t1 = a;
+	const triangle* t2 = b;
 	float z1 = t1->data[0].z + t1->data[1].z + t1->data[2].z;
 	float z2 = t2->data[0].z + t2->data[1].z + t2->data[2].z;
 	if (z1 < z2) return 1;

@@ -6,12 +6,12 @@
 #include "vector.h"
 #include "linked_list.h"
 
-#define MOV_SPEED 8.0f
+#define MOV_SPEED 16.0f
 #define ROT_SPEED 2.0f
 
 #define FOV 90.0f
 #define Z_NEAR 0.1f
-#define Z_FAR 100.0f
+#define Z_FAR 500.0f
 
 #define M_PI		3.14159265358979323846f	/* pi */
 #define M_PI_2		1.57079632679489661923f	/* pi/2 */
@@ -77,27 +77,7 @@ CHAR_INFO grey_pixel(float l);
 
 bool game_setup(engine* e) {
 
-	model = mesh_from_obj("ship.obj");
-	//model.data = malloc(sizeof(triangle) * 12);
-	//
-	//model.data[0] = (triangle) { 0.0f, 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f };
-	//model.data[1] = (triangle) { 0.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,    1.0f, 0.0f, 0.0f, 1.0f };
-	//// EAST 
-	//model.data[2] = (triangle) { 1.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f };
-	//model.data[3] = (triangle) { 1.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f, 1.0f };
-	//// NORTH
-	//model.data[4] = (triangle) { 1.0f, 0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f };
-	//model.data[5] = (triangle) { 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f, 1.0f };
-	//// WEST
-	//model.data[6] = (triangle) { 0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f };
-	//model.data[7] = (triangle) { 0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f };
-	//// TOP  
-	//model.data[8] = (triangle) { 0.0f, 1.0f,q 0.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f };
-	//model.data[9] = (triangle) { 0.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f };
-	//// BOTTOM
-	//model.data[10] = (triangle) { 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f };
-	//model.data[11] = (triangle) { 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,    1.0f, 0.0f, 0.0f, 1.0f };
-	//model.length = 12;
+	model = mesh_from_obj("mountains.obj");
 
 	float aspect = ((float)e->console->height * (float)e->console->chr_height) / ((float)e->console->width * (float)e->console->chr_width);
 	projectionMatrix = matrix_projection(FOV, aspect, Z_NEAR, Z_FAR);
@@ -198,26 +178,34 @@ bool game_update(engine* e, float dt) {
 			);
 			for (size_t n = 0; n < clipCount; n++) {
 
-				triangle projTri = triangle_multiply_matrix(clipped[n], projectionMatrix, true);
-				projTri.color = clipped[n].color;
-				projTri.symbol = clipped[n].symbol;
+				triangle projTri = triangle_multiply_matrix(clipped[n], projectionMatrix, false);
+				
+				if (triangle_passes_clip(projTri)) {
 
-				projTri.data[0].x *= -1.0f; projTri.data[0].y *= -1.0f;
-				projTri.data[1].x *= -1.0f; projTri.data[1].y *= -1.0f;
-				projTri.data[2].x *= -1.0f; projTri.data[2].y *= -1.0f;
+					projTri.data[0] = vector_scale_w(projTri.data[0]);
+					projTri.data[1] = vector_scale_w(projTri.data[1]);
+					projTri.data[2] = vector_scale_w(projTri.data[2]);
 
-				projTri.data[0].x += 1.0f; projTri.data[0].y += 1.0f;
-				projTri.data[1].x += 1.0f; projTri.data[1].y += 1.0f;
-				projTri.data[2].x += 1.0f; projTri.data[2].y += 1.0f;
+					projTri.color = clipped[n].color;
+					projTri.symbol = clipped[n].symbol;
 
-				projTri.data[0].x *= 0.5f * (float)e->console->width;
-				projTri.data[1].x *= 0.5f * (float)e->console->width;
-				projTri.data[2].x *= 0.5f * (float)e->console->width;
-				projTri.data[0].y *= 0.5f * (float)e->console->height;
-				projTri.data[1].y *= 0.5f * (float)e->console->height;
-				projTri.data[2].y *= 0.5f * (float)e->console->height;
+					projTri.data[0].x *= -1.0f; projTri.data[0].y *= -1.0f;
+					projTri.data[1].x *= -1.0f; projTri.data[1].y *= -1.0f;
+					projTri.data[2].x *= -1.0f; projTri.data[2].y *= -1.0f;
 
-				vector_append(&rasterQueue, &projTri);
+					projTri.data[0].x += 1.0f; projTri.data[0].y += 1.0f;
+					projTri.data[1].x += 1.0f; projTri.data[1].y += 1.0f;
+					projTri.data[2].x += 1.0f; projTri.data[2].y += 1.0f;
+
+					projTri.data[0].x *= 0.5f * (float)e->console->width;
+					projTri.data[1].x *= 0.5f * (float)e->console->width;
+					projTri.data[2].x *= 0.5f * (float)e->console->width;
+					projTri.data[0].y *= 0.5f * (float)e->console->height;
+					projTri.data[1].y *= 0.5f * (float)e->console->height;
+					projTri.data[2].y *= 0.5f * (float)e->console->height;
+					
+					vector_append(&rasterQueue, &projTri);
+				}
 			}
 		}
 	}
