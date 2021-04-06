@@ -76,7 +76,7 @@ float fast_inv_sqrt(float n) {
 
 vec4 vector_normalize(vec4 v) {
 	float l = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-	return (vec4) { v.x / l, v.y / l, v.z / l, 1.0f };
+	return (vec4) { v.x / l, v.y / l, v.z / l, v.w };
 }
 vec4 vector_scale_w(vec4 v) {
 	return (vec4) { v.x / v.w, v.y / v.w, v.z / v.w, 1.0f };

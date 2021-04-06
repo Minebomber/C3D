@@ -6,10 +6,10 @@
 #include "vector.h"
 #include "linked_list.h"
 
-#define MOV_SPEED 16.0f
-#define ROT_SPEED 2.0f
+#define MOV_SPEED 8.0f
+#define ROT_SPEED 1.0f
 
-#define FOV 90.0f
+#define H_FOV 90.0f
 #define Z_NEAR 0.1f
 #define Z_FAR 100.0f
 
@@ -37,11 +37,15 @@ enum MOUSE_BUTTONS {
 	MBTN_EXTRA2 = FROM_LEFT_4TH_BUTTON_PRESSED
 };
 
+float vFov;
+
 mat4 projectionMatrix;
 mat4 viewMatrix;
 mat4 modelMatrix;
 
 mesh model;
+
+vec4 clipNormalLeft, clipNormalRight, clipNormalBottom, clipNormalTop;
 
 vec4 cameraPos, cameraDir, cameraStrafe;
 float cameraYaw, cameraPitch;
@@ -63,7 +67,7 @@ void game_mouse_btn(engine* e, int m, bool p);
 void game_mouse_move(engine* e, int x, int y);
 
 bool key_state(int k);
-//bool mouse_state(int m);
+bool mouse_state(int m);
 
 void update_view_matrix();
 void update_model_matrix(float theta);
@@ -75,12 +79,36 @@ void camera_fly(float d);
 
 CHAR_INFO grey_pixel(float l);
 
+float radians(float d) {
+	return d / 180.0f * M_PI;
+}
+
+float degrees(float r) {
+	return r / M_PI * 180.0f;
+}
+
+float horizontal_to_vertical_fov(float hFov, float aspect) {
+	return degrees(2.0f * atanf(aspect * tanf(radians(hFov / 2.0f))));
+}
+
 bool game_setup(engine* e) {
 
 	model = mesh_from_obj("mountains.obj");
 
 	float aspect = ((float)e->console->height * (float)e->console->chr_height) / ((float)e->console->width * (float)e->console->chr_width);
-	projectionMatrix = matrix_projection(FOV, aspect, Z_NEAR, Z_FAR);
+	vFov = horizontal_to_vertical_fov(H_FOV, aspect);
+
+	float nA = cosf(radians(H_FOV / 2.0f));
+	float nB = sinf(radians(H_FOV / 2.0f));
+	float nC = cosf(radians(vFov / 2.0f));
+	float nD = sinf(radians(vFov / 2.0f));
+
+	clipNormalLeft = (vec4){ nA, 0.0f, nB };
+	clipNormalRight = (vec4) { -nA, 0.0f, nB };
+	clipNormalBottom = (vec4){ 0.0f, nC, nD };
+	clipNormalTop = (vec4){ 0.0f, -nC, nD };
+
+	projectionMatrix = matrix_projection(vFov, aspect, Z_NEAR, Z_FAR);
 
 	cameraYaw = M_PI_2;
 	update_camera();
@@ -95,37 +123,37 @@ bool game_update(engine* e, float dt) {
 	{
 		if (key_state(VK_SPACE)) {
 			camera_fly(MOV_SPEED * dt);
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
 		if (key_state(VK_SHIFT)) {
 			camera_fly(-MOV_SPEED * dt);
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
 		if (key_state('W')) {
 			camera_move(MOV_SPEED * dt);
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
 		if (key_state('S')) {
 			camera_move(-MOV_SPEED * dt);
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
 		if (key_state('A')) {
 			camera_strafe(MOV_SPEED * dt);
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
 		if (key_state('D')) {
 			camera_strafe(-MOV_SPEED * dt);
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
 		if (key_state(VK_LEFT)) {
 			cameraYaw -= ROT_SPEED * dt;
 			update_camera();
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
 		if (key_state(VK_RIGHT)) {
 			cameraYaw += ROT_SPEED * dt;
 			update_camera();
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
 
 		if (key_state(VK_UP)) {
@@ -133,19 +161,39 @@ bool game_update(engine* e, float dt) {
 			if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
 			if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
 			update_camera();
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
 		}
+
 		if (key_state(VK_DOWN)) {
 			cameraPitch -= ROT_SPEED * dt;
 			if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
 			if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
 			update_camera();
-			//needsViewUpdate = true;
+			needsViewUpdate = true;
+		}
+
+		if (mouse_state(MBTN_LEFT)) {
+			int dx = mousePos.x - mousePosOld.x;
+			int dy = mousePos.y - mousePosOld.y;
+			cameraYaw += dx * ROT_SPEED * dt / (float)e->console->chr_width;
+			cameraPitch -= dy * ROT_SPEED * dt / (float)e->console->chr_height;
+			if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
+			if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
+			update_camera();
+			needsViewUpdate = true;
+			mousePosOld = mousePos;
 		}
 	}
 
-	update_view_matrix();
-	update_model_matrix(0);
+	if (needsViewUpdate) {
+		update_view_matrix();
+		needsViewUpdate = false;
+	}
+
+	if (needsModelUpdate) {
+		update_model_matrix(0);
+		needsModelUpdate = false;
+	}
 
 	runningTime += dt;
 
@@ -166,22 +214,54 @@ bool game_update(engine* e, float dt) {
 			triangle viewTri = triangle_multiply_matrix(modelTri, viewMatrix, true);
 			viewTri.color = c.Attributes;
 			viewTri.symbol = c.Char.UnicodeChar;
-			
-			size_t clipCount = 0;
+
 			triangle clipped[2];
-			clipCount = triangle_clip(
-				(vec4) { 0.0f, 0.0f, Z_NEAR, 1.0f },
-				(vec4) { 0.0f, 0.0f, 1.0f, 1.0f },
-				&viewTri,
-				&clipped[0],
-				&clipped[1]
-			);
-			for (size_t n = 0; n < clipCount; n++) {
+			linked_list clipQueue = { 0 };
+			list_push_back(&clipQueue, sizeof(triangle), &viewTri);
+			size_t clipCount = 1;
 
-				triangle projTri = triangle_multiply_matrix(clipped[n], projectionMatrix, true);
+			for (int p = 0; p < 6; p++) {
+				size_t toAdd = 0;
+				while (clipCount > 0) {
+					list_node* front = list_pop_front(&clipQueue);
+					triangle* test = &front->data;
+					clipCount--;
+					switch (p) {
+					case 0: // near
+						toAdd = triangle_clip((vec4) { 0.0f, 0.0f, Z_NEAR }, (vec4) { 0.0f, 0.0f, 1.0f }, test, &clipped[0], &clipped[1]);
+						break;
+					case 1: // far
+						toAdd = triangle_clip((vec4) { 0.0f, 0.0f, Z_FAR }, (vec4) { 0.0f, 0.0f, -1.0f }, test, &clipped[0], &clipped[1]);
+						break;
+					case 2: // left
+						toAdd = triangle_clip((vec4) { 0 }, clipNormalLeft, test, &clipped[0], &clipped[1]);
+						break;
+					case 3: // right
+						toAdd = triangle_clip((vec4) { 0 }, clipNormalRight, test, &clipped[0], &clipped[1]);
+						break;
+					case 4: // bottom
+						toAdd = triangle_clip((vec4) { 0 }, clipNormalBottom, test, &clipped[0], &clipped[1]);
+						break;
+					case 5: // top
+						toAdd = triangle_clip((vec4) { 0 }, clipNormalTop, test, &clipped[0], &clipped[1]);
+						break;
+					}
+					for (size_t w = 0; w < toAdd; w++) {
+						list_push_back(&clipQueue, sizeof(triangle), &clipped[w]);
+					}
+					free(front);
+				}
+				clipCount = clipQueue.length;
+			}
 
-				projTri.color = clipped[n].color;
-				projTri.symbol = clipped[n].symbol;
+			while (clipQueue.head) {
+				list_node* node = list_pop_front(&clipQueue);
+				triangle* clippedTri = &node->data;
+
+				triangle projTri = triangle_multiply_matrix(*clippedTri, projectionMatrix, true);
+
+				projTri.color = clippedTri->color;
+				projTri.symbol = clippedTri->symbol;
 
 				projTri.data[0].x *= -1.0f; projTri.data[0].y *= -1.0f;
 				projTri.data[1].x *= -1.0f; projTri.data[1].y *= -1.0f;
@@ -199,98 +279,38 @@ bool game_update(engine* e, float dt) {
 				projTri.data[2].y *= 0.5f * (float)e->console->height;
 
 				vector_append(&rasterQueue, &projTri);
+
+				free(node);
 			}
+
+			list_destroy(&clipQueue);
 		}
 	}
 
 	qsort(rasterQueue.data, rasterQueue.length, rasterQueue.itemSize, triangle_compare);
 
 	for (int i = 0; i < rasterQueue.length; i++) {
-		triangle* toRaster = vector_get(&rasterQueue, i);
+		triangle* t = vector_get(&rasterQueue, i);
+		console_fill_triangle(
+			e->console,
+			(int)(t->data[0].x), (int)(t->data[0].y),
+			(int)(t->data[1].x), (int)(t->data[1].y),
+			(int)(t->data[2].x), (int)(t->data[2].y),
+			t->symbol, t->color
+		);
 
-		triangle clipped[2];
-		linked_list clipQueue = { 0 };
-		list_push_back(&clipQueue, sizeof(triangle), toRaster);
-		int newCount = 1;
-
-		for (int p = 0; p < 4; p++) {
-			int toAdd = 0;
-			while (newCount > 0) {
-				list_node* front = list_pop_front(&clipQueue);
-				triangle* test = &front->data;
-				newCount--;
-				switch (p) {
-				case 0: 
-					toAdd = triangle_clip(
-						(vec4) { 0.0f, 0.0f, 0.0f, 1.0f },
-						(vec4) { 0.0f, 1.0f, 0.0f, 1.0f },
-						test,
-						&clipped[0],
-						&clipped[1]
-					); 
-					break;
-				case 1:
-					toAdd = triangle_clip(
-						(vec4) { 0.0f, (float)e->console->height - 1.0f, 0.0f, 1.0f },
-						(vec4) { 0.0f, -1.0f, 0.0f, 1.0f },
-						test,
-						&clipped[0],
-						&clipped[1]
-					); 
-					break;
-				case 2:
-					toAdd = triangle_clip(
-						(vec4) { 0.0f, 0.0f, 0.0f, 1.0f },
-						(vec4) { 1.0f, 0.0f, 0.0f, 1.0f },
-						test,
-						&clipped[0],
-						&clipped[1]
-					); 
-					break;
-				case 3:
-					toAdd = triangle_clip(
-						(vec4) { (float)e->console->width - 1.0f, 0.0f, 0.0f, 1.0f },
-						(vec4) { -1.0f, 0.0f, 0.0f, 1.0f },
-						test,
-						&clipped[0],
-						&clipped[1]
-					); 
-					break;
-				}
-				for (int w = 0; w < toAdd; w++) {
-					list_push_back(&clipQueue, sizeof(triangle), &clipped[w]);
-				}
-				free(front);
-			}
-			newCount = clipQueue.length;
-		}
-		
-		while (clipQueue.head) {
-			list_node* node = list_pop_front(&clipQueue);
-			triangle* t = &node->data;
-			console_fill_triangle(
-				e->console,
-				(int)(t->data[0].x), (int)(t->data[0].y),
-				(int)(t->data[1].x), (int)(t->data[1].y),
-				(int)(t->data[2].x), (int)(t->data[2].y),
-				t->symbol, t->color
-			);
-
-			/*console_triangle(
-				e->console,
-				(int)(t->data[0].x), (int)(t->data[0].y),
-				(int)(t->data[1].x), (int)(t->data[1].y),
-				(int)(t->data[2].x), (int)(t->data[2].y),
-				PX_SOLID, FG_BLACK
-			);*/
-			free(node);
-		}
-		list_destroy(&clipQueue);
+		/*console_triangle(
+			e->console,
+			(int)(t->data[0].x), (int)(t->data[0].y),
+			(int)(t->data[1].x), (int)(t->data[1].y),
+			(int)(t->data[2].x), (int)(t->data[2].y),
+			PX_SOLID, FG_WHITE
+		);*/
 	}
 
 	vector_destroy(&rasterQueue);
 
-	return !(GetAsyncKeyState(VK_ESCAPE) >> 16);
+	return !key_state(VK_ESCAPE);
 }
 
 void game_teardown(engine* e) {
@@ -310,11 +330,18 @@ void game_key_up(engine* e, int k) {
 void game_mouse_btn(engine* e, int m, bool p) {
 	if (p) mouseStates |= m;
 	else mouseStates &= ~m;
+
+	if (m == MBTN_LEFT && p)
+		mousePosOld = mousePos;
 }
 
 void game_mouse_move(engine* e, int x, int y) {
 	mousePos.x = x;
 	mousePos.y = y;
+}
+
+bool mouse_state(int m) {
+	return (mouseStates & m) != 0;
 }
 
 bool key_state(int k) {

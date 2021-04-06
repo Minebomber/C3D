@@ -46,7 +46,7 @@ int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1
 	}
 
 	if (insideCount == 1 && outsideCount == 2) {
-		clipped1->color = toClip->color;
+		clipped1->color = FG_BLUE; // toClip->color;
 		clipped1->symbol = toClip->symbol;
 
 		clipped1->data[0] = *insidePoints[0];
@@ -58,9 +58,9 @@ int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1
 	}
 
 	if (insideCount == 2 && outsideCount == 1) {
-		clipped1->color = toClip->color;
+		clipped1->color = FG_GREEN; // toClip->color;
 		clipped1->symbol = toClip->symbol;
-		clipped2->color = toClip->color;
+		clipped2->color = FG_RED; // toClip->color;
 		clipped2->symbol = toClip->symbol;
 
 		clipped1->data[0] = *insidePoints[0];
