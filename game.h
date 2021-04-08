@@ -91,8 +91,6 @@ void camera_strafe(float d);
 void camera_fly(float d);
 
 CHAR_INFO grey_pixel(float l);
-CHAR_INFO compare_colors(float v1, float v2, float c1, float c2, short FG_LIGHT, short FG_DARK, short BG_LIGHT, short BG_DARK);
-CHAR_INFO color_pixel(float r, float g, float b);
 
 float radians(float d);
 float degrees(float r);
@@ -362,8 +360,6 @@ void render_objects(engine* e) {
 					
 					projTri.color = clippedTri->color;
 					projTri.symbol = clippedTri->symbol;
-					//projTri.color = colorPixel.Attributes;
-					//projTri.symbol = colorPixel.Char.UnicodeChar;
 
 					projTri.data[0].x *= -1.0f; 
 					projTri.data[0].y *= -1.0f;
@@ -516,90 +512,4 @@ CHAR_INFO grey_pixel(float l) {
 	c.Attributes = bg_col | fg_col;
 	c.Char.UnicodeChar = sym;
 	return c;
-}
-
-CHAR_INFO compare_colors(float v1, float v2, float c1, float c2, short FG_LIGHT, short FG_DARK, short BG_LIGHT, short BG_DARK) {
-	unsigned int fgColor = 0;
-	unsigned int bgColor = 0;
-	wchar_t symbol = 0;
-	float shading = 0.5f;
-	if (v1 >= v2) {
-		fgColor = c1 > 0.5f ? FG_LIGHT : FG_DARK;
-		if (v2 < 0.0001f) {
-			if (c2 >= 0.00f && c2 < 0.25f) bgColor = BG_BLACK;
-			if (c2 >= 0.25f && c2 < 0.50f) bgColor = BG_DARK_GREY;
-			if (c2 >= 0.50f && c2 < 0.75f) bgColor = BG_GREY;
-			if (c2 >= 0.75f && c2 < 1.00f) bgColor = BG_WHITE;
-		} else {
-			bgColor = c2 > 0.5f ? BG_LIGHT : BG_DARK;
-		}
-		shading = ((c1 - c2) / 2.0f) + 0.5f;
-	}
-
-	if (shading >= 0.00f && shading < 0.20f) symbol = L' ';
-	if (shading >= 0.20f && shading < 0.40f) symbol = PX_QUARTER;
-	if (shading >= 0.40f && shading < 0.60f) symbol = PX_HALF;
-	if (shading >= 0.60f && shading < 0.80f) symbol = PX_THREEQUARTERS;
-	if (shading >= 0.80f) symbol = PX_SOLID;
-
-	CHAR_INFO c;
-	c.Attributes = fgColor | bgColor << 4;
-	c.Char.UnicodeChar = symbol;
-	return c;
-}
-
-CHAR_INFO color_pixel(float r, float g, float b) {
-	float mean = (r + g + b) / 3.0f;
-	float rVar = (r - mean) * (r - mean);
-	float gVar = (g - mean) * (g - mean);
-	float bVar = (b - mean) * (b - mean);
-	float variance = rVar + gVar + bVar;
-
-	if (variance < 0.0001f) {
-		return grey_pixel(0.2987f * r + 0.5870f * g + 0.1140f * b);
-	}
-
-	float y = min(r, g);
-	float c = min(g, b);
-	float m = min(b, r);
-
-	float mean2 = (y + c + m) / 3.0f;
-	float yVar = (y - mean2) * (y - mean2);
-	float cVar = (c - mean2) * (c - mean2);
-	float mVar = (m - mean2) * (m - mean2);
-
-	float maxPrimaryVar = max(rVar, gVar);
-	maxPrimaryVar = max(maxPrimaryVar, bVar);
-
-	float maxSecondaryVar = max(cVar, yVar);
-	maxSecondaryVar = max(maxSecondaryVar, mVar);
-
-	if (rVar == maxPrimaryVar && yVar == maxSecondaryVar)
-		return compare_colors(rVar, yVar, r, y, FG_RED, FG_DARK_RED, BG_YELLOW, BG_DARK_YELLOW);
-
-	if (rVar == maxPrimaryVar && mVar == maxSecondaryVar)
-		return compare_colors(rVar, mVar, r, m, FG_RED, FG_DARK_RED, BG_MAGENTA, BG_DARK_MAGENTA);
-
-	if (rVar == maxPrimaryVar && cVar == maxSecondaryVar)
-		return compare_colors(rVar, cVar, r, c, FG_RED, FG_DARK_RED, BG_CYAN, BG_DARK_CYAN);
-
-	if (gVar == maxPrimaryVar && yVar == maxSecondaryVar)
-		return compare_colors(gVar, yVar, g, y, FG_GREEN, FG_DARK_GREEN, BG_YELLOW, BG_DARK_YELLOW);
-
-	if (gVar == maxPrimaryVar && cVar == maxSecondaryVar)
-		return compare_colors(gVar, cVar, g, c, FG_GREEN, FG_DARK_GREEN, BG_CYAN, BG_DARK_CYAN);
-
-	if (gVar == maxPrimaryVar && mVar == maxSecondaryVar)
-		return compare_colors(gVar, mVar, g, m, FG_GREEN, FG_DARK_GREEN, BG_MAGENTA, BG_DARK_MAGENTA);
-
-	if (bVar == maxPrimaryVar && mVar == maxSecondaryVar)
-		return compare_colors(bVar, mVar, b, m, FG_BLUE, FG_DARK_BLUE, BG_MAGENTA, BG_DARK_MAGENTA);
-
-	if (bVar == maxPrimaryVar && cVar == maxSecondaryVar)
-		return compare_colors(bVar, cVar, b, c, FG_BLUE, FG_DARK_BLUE, BG_CYAN, BG_DARK_CYAN);
-
-	if (bVar == maxPrimaryVar && yVar == maxSecondaryVar)
-		return compare_colors(bVar, yVar, b, y, FG_BLUE, FG_DARK_BLUE, BG_YELLOW, BG_DARK_YELLOW);
-
-	return (CHAR_INFO){ 0 };
 }
