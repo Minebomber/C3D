@@ -286,6 +286,8 @@ void process_movement(engine* e, float dt) {
 	if (key_state('K'))	ship->velocity.z -= 3.0f * dt;
 	if (key_state('L'))	ship->velocity.x -= 3.0f * dt;
 	if (key_state('J'))	ship->velocity.x += 3.0f * dt;
+	if (key_state('U'))	ship->velocity.y -= 3.0f * dt;
+	if (key_state('P'))	ship->velocity.y += 12.8f * dt;
 }
 
 void render_objects(engine* e) {
