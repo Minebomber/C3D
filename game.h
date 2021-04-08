@@ -44,7 +44,6 @@ mat4 projectionMatrix;
 mat4 viewMatrix;
 mat4 modelMatrix;
 
-//vector meshes;
 vector objects;
 
 vec4 clipNormalLeft, clipNormalRight, clipNormalBottom, clipNormalTop;
@@ -109,8 +108,6 @@ float horizontal_to_vertical_fov(float hFov, float aspect) {
 }
 
 bool game_setup(engine* e) {
-
-	//meshes = vector_create(sizeof(mesh));
 	objects = vector_create(sizeof(object));
 
 	mesh model = mesh_from_obj("axis4.obj");
@@ -183,8 +180,6 @@ bool game_update(engine* e, float dt) {
 
 	return !key_state(VK_ESCAPE);
 }
-
-
 
 bool less(float a, float b) {
 	return fabsf(a) < fabsf(b);

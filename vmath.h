@@ -17,7 +17,6 @@ vec4	vector_div(vec4 v, float f);
 
 float	vector_length(vec4 v);
 vec4	vector_normalize(vec4 v);
-vec4	vector_fast_normalize(vec4 v);
 vec4	vector_scale_w(vec4 v);
 
 float	vector_dot(vec4 u, vec4 v);
@@ -80,17 +79,6 @@ vec4 vector_normalize(vec4 v) {
 }
 vec4 vector_scale_w(vec4 v) {
 	return (vec4) { v.x / v.w, v.y / v.w, v.z / v.w, 1.0f };
-}
-
-vec4 vector_fast_normalize(vec4 v) {
-	float n = v.x * v.x + v.y * v.y + v.z * v.z;
-	const float threehalfs = 1.5f;
-	float x2 = n * 0.5f;
-	float l = n;
-	long i = *(long*)&l;
-	i = 0x5f3759df - (i >> 1);
-	l = l * (threehalfs - (x2 * l * l));
-	return (vec4) { v.x* l, v.y* l, v.z* l, v.w };
 }
 
 float vector_dot(vec4 u, vec4 v) {
