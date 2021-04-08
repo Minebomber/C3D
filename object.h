@@ -20,13 +20,47 @@ typedef struct object {
 	void (*cbSetup)(struct object*, engine*);
 	void (*cbUpdate)(struct object*, engine*, float);
 	void (*cbTeardown)(struct object*, engine*);
-	void (*cbCollision)(struct object*, struct object*, float, float, float);
+	void (*cbCollision)(struct object*, struct object*, engine*, float, float, float);
 } object;
 
 void object_update(object* o, engine* e, float dt);
+void object_collide(object* o1, object* o2, engine* e, float dx, float dy, float dz);
 box bbox_for_mesh(mesh* m);
 bool objects_colliding(object* o1, object* o2);
 vec4 object_collision_distance(object* o1, object* o2);
+float absmin(float a, float b);
+bool less(float a, float b);
+
+void object_update(object* o, engine* e, float dt) {
+	if (!o->fixed) {
+		o->velocity = vector_add(o->velocity, vector_mul(o->acceleration, dt));
+		if (o->acceleration.x == 0.0f && fabsf(o->velocity.x) < 0.1f) o->velocity.x = 0.0f;
+		if (o->acceleration.y == 0.0f && fabsf(o->velocity.y) < 0.1f) o->velocity.y = 0.0f;
+		if (o->acceleration.z == 0.0f && fabsf(o->velocity.z) < 0.1f) o->velocity.z = 0.0f;
+		o->position = vector_add(o->position, vector_mul(o->velocity, dt));
+	}
+	o->mesh.matrix = matrix_translation(o->position.x, o->position.y, o->position.z);
+}
+
+void object_collide(object* o1, object* o2, engine* e, float dx, float dy, float dz) {
+	if (less(dx, dy) && less(dx, dz)) {
+		o1->position.x -= dx;
+		o1->velocity.x *= -1.0f * o1->elasticity;
+		o1->acceleration.x = 0.0f;
+	} else if (less(dy, dx) && less(dy, dz)) {
+		o1->position.y -= dy;
+		o1->velocity.y *= -1.0f * o1->elasticity;
+		o1->acceleration.y = 0.0f;
+	} else if (less(dz, dx) && less(dz, dy)) {
+		o1->position.z -= dz;
+		o1->velocity.z *= -1.0f * o1->elasticity;
+		o1->acceleration.z = 0.0f;
+	}
+}
+
+bool less(float a, float b) {
+	return fabsf(a) < fabsf(b);
+}
 
 float absmin(float a, float b) {
 	return (fabsf(a) < fabsf(b)) ? a : b;
@@ -90,13 +124,3 @@ box bbox_for_mesh(mesh* m) {
 	};
 }
 
-void object_update(object* o, engine* e, float dt) {
-	if (!o->fixed) {
-		o->velocity = vector_add(o->velocity, vector_mul(o->acceleration, dt));
-		if (o->acceleration.x == 0.0f && fabsf(o->velocity.x) < 0.1f) o->velocity.x = 0.0f;
-		if (o->acceleration.y == 0.0f && fabsf(o->velocity.y) < 0.1f) o->velocity.y = 0.0f;
-		if (o->acceleration.z == 0.0f && fabsf(o->velocity.z) < 0.1f) o->velocity.z = 0.0f;
-		o->position = vector_add(o->position, vector_mul(o->velocity, dt));
-	}
-	o->mesh.matrix = matrix_translation(o->position.x, o->position.y, o->position.z);
-}

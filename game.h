@@ -114,6 +114,7 @@ bool game_setup(engine* e) {
 	object obj = {
 		.mesh = model,
 		.cbUpdate = object_update,
+		.cbCollision = object_collide,
 		.fixed = true,
 		.boundingBox = bbox_for_mesh(&model),
 		.elasticity = 0.0f,
@@ -128,6 +129,7 @@ bool game_setup(engine* e) {
 	obj = (object){
 		.mesh = model,
 		.cbUpdate = object_update,
+		.cbCollision = object_collide,
 		.position = {5.0f, 25.0f, 5.0f},
 		.velocity = {0.0f, 0.0f, 0.0f},
 		.acceleration = {0.0f, -9.8f, 0.0f},
@@ -181,10 +183,6 @@ bool game_update(engine* e, float dt) {
 	return !key_state(VK_ESCAPE);
 }
 
-bool less(float a, float b) {
-	return fabsf(a) < fabsf(b);
-}
-
 void process_collisions(engine* e) {
 	for (size_t i = 0; i < objects.length; i++) {
 		for (size_t j = 0; j < objects.length; j++) {
@@ -193,19 +191,8 @@ void process_collisions(engine* e) {
 			object* o2 = (object*)vector_get(&objects, j);
 			if (!o1->fixed && objects_colliding(o1, o2)) {
 				vec4 dist = object_collision_distance(o1, o2);
-				if (less(dist.x, dist.y) && less(dist.x, dist.z)) {
-					o1->position.x -= dist.x;
-					o1->velocity.x *= -1.0f * o1->elasticity;
-					o1->acceleration.x = 0.0f;
-				} else if (less(dist.y, dist.x) && less(dist.y, dist.z)) {
-					o1->position.y -= dist.y;
-					o1->velocity.y *= -1.0f * o1->elasticity;
-					o1->acceleration.y = 0.0f;
-				} else if (less(dist.z, dist.x) && less(dist.z, dist.y)) {
-					o1->position.z -= dist.z;
-					o1->velocity.z *= -1.0f * o1->elasticity;
-					o1->acceleration.z = 0.0f;
-				}
+				if (o1->cbCollision)
+					o1->cbCollision(o1, o2, e, dist.x, dist.y, dist.z);
 			}
 		}
 	}
