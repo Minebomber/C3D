@@ -85,9 +85,11 @@ void engine_run(engine* engine) {
 			running = false;
 
 		// Draw
-		swprintf(windowTitle, 256, L"Console 3D Engine | FPS: %3.0f", 1.0f / frameTime);
+		swprintf(windowTitle, 256, L"Console 3D Engine | FPS: %3.2f ; MS: %3.2f", 1.0f / frameTime, (frameTime * 1000.0f) / 60.0f);
 		SetConsoleTitle(windowTitle);
 		console_display(engine->console);
+		static float targetTime = 1000.0f / 60.0f;
+		//Sleep(2);
 	}
 
 	if (engine->cbTeardown) engine->cbTeardown(engine);

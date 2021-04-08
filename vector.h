@@ -17,7 +17,7 @@ void vector_resize(vector* v, size_t capacity);
 void vector_destroy(vector* v);
 void* vector_get(vector* v, size_t index);
 void vector_append(vector* v, void* element);
-void* vector_remove(vector* v, size_t index);
+void vector_remove(vector* v, size_t index);
 
 vector vector_create(size_t itemSize) {
 	return (vector) {
@@ -54,15 +54,13 @@ void vector_append(vector* v, void* element) {
 	memcpy((char*)v->data + (v->length++ * v->itemSize), element, v->itemSize);
 }
 
-void* vector_remove(vector* v, size_t index) {
+void vector_remove(vector* v, size_t index) {
 	if (index < 0 || index >= v->length)
-		return NULL;
-	void* removed = vector_get(v, index);
+		return;
 	for (size_t i = index; i < v->length - 1; i++) {
 		memcpy(vector_get(v, i), vector_get(v, i + 1), v->itemSize);
 	}
 	v->length--;
 	if (v->length > 0 && v->length == v->capacity / 4)
 		vector_resize(v, v->capacity / 2);
-	return removed;
 }

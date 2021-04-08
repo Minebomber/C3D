@@ -148,6 +148,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="linked_list.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="object.h" />
     <ClInclude Include="vector.h" />
     <ClInclude Include="vmath.h" />
   </ItemGroup>

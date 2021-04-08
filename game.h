@@ -5,6 +5,7 @@
 #include "mesh.h"
 #include "vector.h"
 #include "linked_list.h"
+#include "object.h"
 
 #define MOV_SPEED 8.0f
 #define ROT_SPEED 1.0f
@@ -43,7 +44,8 @@ mat4 projectionMatrix;
 mat4 viewMatrix;
 mat4 modelMatrix;
 
-mesh model;
+//vector meshes;
+vector objects;
 
 vec4 clipNormalLeft, clipNormalRight, clipNormalBottom, clipNormalTop;
 
@@ -57,6 +59,13 @@ vec2 mousePos, mousePosOld;
 
 float runningTime;
 
+bool shouldUpdateView = true;
+
+float rand_range(float min, float max) {
+	float r = max - min;
+	return min + (float)rand() / ((float)RAND_MAX / r);
+}
+
 bool game_setup(engine* e);
 bool game_update(engine* e, float dt);
 void game_teardown(engine* e);
@@ -66,11 +75,15 @@ void game_key_up(engine* e, int k);
 void game_mouse_btn(engine* e, int m, bool p);
 void game_mouse_move(engine* e, int x, int y);
 
+void process_collisions(engine* e);
+void process_movement(engine* e, float dt);
+void render_objects(engine* e);
+
 bool key_state(int k);
 bool mouse_state(int m);
 
 void update_view_matrix();
-void update_model_matrix(float theta);
+void update_model_matrix(mesh* m, float rx, float ry, float rz, float px, float py, float pz);
 
 void update_camera();
 void camera_move(float d);
@@ -78,6 +91,12 @@ void camera_strafe(float d);
 void camera_fly(float d);
 
 CHAR_INFO grey_pixel(float l);
+CHAR_INFO compare_colors(float v1, float v2, float c1, float c2, short FG_LIGHT, short FG_DARK, short BG_LIGHT, short BG_DARK);
+CHAR_INFO color_pixel(float r, float g, float b);
+
+float radians(float d);
+float degrees(float r);
+float horizontal_to_vertical_fov(float hFov, float aspect);
 
 float radians(float d) {
 	return d / 180.0f * M_PI;
@@ -93,7 +112,35 @@ float horizontal_to_vertical_fov(float hFov, float aspect) {
 
 bool game_setup(engine* e) {
 
-	model = mesh_from_obj("mountains.obj");
+	//meshes = vector_create(sizeof(mesh));
+	objects = vector_create(sizeof(object));
+
+	mesh model = mesh_from_obj("axis4.obj");
+	object obj = {
+		.mesh = model,
+		.cbUpdate = object_update,
+		.fixed = false,
+		.boundingBox = bbox_for_mesh(&model),
+		.elasticity = 1.0f,
+		.position = {0.0f, 0.0f, 0.0f},
+		.velocity = {0.0f, 0.0f, 0.0f},
+		.acceleration = {0.0f, 0.0f, 0.0f},
+
+	};
+	vector_append(&objects, &obj);
+
+	model = mesh_from_obj("ship.obj");
+	obj = (object){
+		.mesh = model,
+		.cbUpdate = object_update,
+		.position = {-25.0f, 0.0f, -25.0f},
+		.velocity = {4.0f, 0.0f, 3.0f},
+		.acceleration = {0.5f, 0.0f, 0.5f},
+		.fixed = false,
+		.boundingBox = bbox_for_mesh(&model),
+		.elasticity = 1.0f,
+	};
+	vector_append(&objects, &obj);
 
 	float aspect = ((float)e->console->height * (float)e->console->chr_height) / ((float)e->console->width * (float)e->console->chr_width);
 	vFov = horizontal_to_vertical_fov(H_FOV, aspect);
@@ -111,185 +158,231 @@ bool game_setup(engine* e) {
 	projectionMatrix = matrix_projection(vFov, aspect, Z_NEAR, Z_FAR);
 
 	cameraYaw = M_PI_2;
+	cameraPos = (vec4){ 10.0f, 15.0f, -20.0f };
 	update_camera();
 
 	return true;
 }
 
 bool game_update(engine* e, float dt) {
-
-	static bool needsViewUpdate = true;
-	static bool needsModelUpdate = true;
-	{
-		if (key_state(VK_SPACE)) {
-			camera_fly(MOV_SPEED * dt);
-			needsViewUpdate = true;
-		}
-		if (key_state(VK_SHIFT)) {
-			camera_fly(-MOV_SPEED * dt);
-			needsViewUpdate = true;
-		}
-		if (key_state('W')) {
-			camera_move(MOV_SPEED * dt);
-			needsViewUpdate = true;
-		}
-		if (key_state('S')) {
-			camera_move(-MOV_SPEED * dt);
-			needsViewUpdate = true;
-		}
-		if (key_state('A')) {
-			camera_strafe(MOV_SPEED * dt);
-			needsViewUpdate = true;
-		}
-		if (key_state('D')) {
-			camera_strafe(-MOV_SPEED * dt);
-			needsViewUpdate = true;
-		}
-		if (key_state(VK_LEFT)) {
-			cameraYaw -= ROT_SPEED * dt;
-			update_camera();
-			needsViewUpdate = true;
-		}
-		if (key_state(VK_RIGHT)) {
-			cameraYaw += ROT_SPEED * dt;
-			update_camera();
-			needsViewUpdate = true;
-		}
-
-		if (key_state(VK_UP)) {
-			cameraPitch += ROT_SPEED * dt;
-			if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
-			if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
-			update_camera();
-			needsViewUpdate = true;
-		}
-
-		if (key_state(VK_DOWN)) {
-			cameraPitch -= ROT_SPEED * dt;
-			if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
-			if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
-			update_camera();
-			needsViewUpdate = true;
-		}
-
-		if (mouse_state(MBTN_LEFT)) {
-			int dx = mousePos.x - mousePosOld.x;
-			int dy = mousePos.y - mousePosOld.y;
-			cameraYaw += dx * ROT_SPEED * dt / (float)e->console->chr_width;
-			cameraPitch -= dy * ROT_SPEED * dt / (float)e->console->chr_height;
-			if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
-			if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
-			update_camera();
-			needsViewUpdate = true;
-			mousePosOld = mousePos;
-		}
-	}
-
-	if (needsViewUpdate) {
-		update_view_matrix();
-		needsViewUpdate = false;
-	}
-
-	if (needsModelUpdate) {
-		update_model_matrix(0);
-		needsModelUpdate = false;
-	}
-
 	runningTime += dt;
 
-	vector rasterQueue = vector_create(sizeof(triangle));
-	for (size_t i = 0; i < model.length; i++) {
-		triangle tri = model.data[i];
+	process_movement(e, dt);
 
-		triangle modelTri = triangle_multiply_matrix(tri, modelMatrix, true);
-		vec4 line1 = vector_sub(modelTri.data[1], modelTri.data[0]);
-		vec4 line2 = vector_sub(modelTri.data[2], modelTri.data[0]);
-		vec4 normal = vector_cross(line1, line2);
-		normal = vector_normalize(normal);
-		vec4 cameraRay = vector_sub(modelTri.data[0], cameraPos);
-		if (vector_dot(normal, cameraRay) < 0.0f) {
-			vec4 lightDir = vector_normalize((vec4) { 0.0f, 1.0f, -1.0f });
-			float dp = vector_dot(normal, lightDir);
-			CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
-			triangle viewTri = triangle_multiply_matrix(modelTri, viewMatrix, true);
-			viewTri.color = c.Attributes;
-			viewTri.symbol = c.Char.UnicodeChar;
+	for (size_t i = 0; i < objects.length; i++) {
+		object* o = (object*)vector_get(&objects, i);
+		if (o->cbUpdate) o->cbUpdate(o, e, dt);
+	}
 
-			triangle clipped[2];
-			linked_list clipQueue = { 0 };
-			list_push_back(&clipQueue, sizeof(triangle), &viewTri);
-			size_t clipCount = 1;
+	process_collisions(e);
 
-			for (int p = 0; p < 6; p++) {
-				size_t toAdd = 0;
-				while (clipCount > 0) {
-					list_node* front = list_pop_front(&clipQueue);
-					triangle* test = &front->data;
-					clipCount--;
-					switch (p) {
-					case 0: // near
-						toAdd = triangle_clip((vec4) { 0.0f, 0.0f, Z_NEAR }, (vec4) { 0.0f, 0.0f, 1.0f }, test, &clipped[0], &clipped[1]);
-						break;
-					case 1: // far
-						toAdd = triangle_clip((vec4) { 0.0f, 0.0f, Z_FAR }, (vec4) { 0.0f, 0.0f, -1.0f }, test, &clipped[0], &clipped[1]);
-						break;
-					case 2: // left
-						toAdd = triangle_clip((vec4) { 0 }, clipNormalLeft, test, &clipped[0], &clipped[1]);
-						break;
-					case 3: // right
-						toAdd = triangle_clip((vec4) { 0 }, clipNormalRight, test, &clipped[0], &clipped[1]);
-						break;
-					case 4: // bottom
-						toAdd = triangle_clip((vec4) { 0 }, clipNormalBottom, test, &clipped[0], &clipped[1]);
-						break;
-					case 5: // top
-						toAdd = triangle_clip((vec4) { 0 }, clipNormalTop, test, &clipped[0], &clipped[1]);
-						break;
-					}
-					for (size_t w = 0; w < toAdd; w++) {
-						list_push_back(&clipQueue, sizeof(triangle), &clipped[w]);
-					}
-					free(front);
+	render_objects(e);
+
+	return !key_state(VK_ESCAPE);
+}
+
+
+
+bool less(float a, float b) {
+	return fabsf(a) < fabsf(b);
+}
+
+void process_collisions(engine* e) {
+	for (size_t i = 0; i < objects.length; i++) {
+		for (size_t j = 0; j < objects.length; j++) {
+			if (i == j) continue;
+			object* o1 = (object*)vector_get(&objects, i);
+			object* o2 = (object*)vector_get(&objects, j);
+			if (!o1->fixed && objects_colliding(o1, o2)) {
+				vec4 dist = object_collision_distance(o1, o2);
+				if (less(dist.x, dist.y) && less(dist.x, dist.z)) {
+					o1->position.x -= dist.x;
+				} else if (less(dist.y, dist.x) && less(dist.y, dist.z)) {
+					o1->position.y -= dist.y;
+				} else if (less(dist.z, dist.x) && less(dist.z, dist.y)) {
+					o1->position.z -= dist.z;
 				}
-				clipCount = clipQueue.length;
 			}
+		}
+	}
+}
 
-			while (clipQueue.head) {
-				list_node* node = list_pop_front(&clipQueue);
-				triangle* clippedTri = &node->data;
+void process_movement(engine* e, float dt) {
 
-				triangle projTri = triangle_multiply_matrix(*clippedTri, projectionMatrix, true);
+	if (key_state(VK_SPACE)) {
+		camera_fly(MOV_SPEED * dt);
+		shouldUpdateView = true;
+	}
+	if (key_state(VK_SHIFT)) {
+		camera_fly(-MOV_SPEED * dt);
+		shouldUpdateView = true;
+	}
+	if (key_state('W')) {
+		camera_move(MOV_SPEED * dt);
+		shouldUpdateView = true;
+	}
+	if (key_state('S')) {
+		camera_move(-MOV_SPEED * dt);
+		shouldUpdateView = true;
+	}
+	if (key_state('A')) {
+		camera_strafe(MOV_SPEED * dt);
+		shouldUpdateView = true;
+	}
+	if (key_state('D')) {
+		camera_strafe(-MOV_SPEED * dt);
+		shouldUpdateView = true;
+	}
+	if (key_state(VK_LEFT)) {
+		cameraYaw -= ROT_SPEED * dt;
+		update_camera();
+		shouldUpdateView = true;
+	}
+	if (key_state(VK_RIGHT)) {
+		cameraYaw += ROT_SPEED * dt;
+		update_camera();
+		shouldUpdateView = true;
+	}
 
-				projTri.color = clippedTri->color;
-				projTri.symbol = clippedTri->symbol;
+	if (key_state(VK_UP)) {
+		cameraPitch += ROT_SPEED * dt;
+		if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
+		if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
+		update_camera();
+		shouldUpdateView = true;
+	}
 
-				projTri.data[0].x *= -1.0f; projTri.data[0].y *= -1.0f;
-				projTri.data[1].x *= -1.0f; projTri.data[1].y *= -1.0f;
-				projTri.data[2].x *= -1.0f; projTri.data[2].y *= -1.0f;
+	if (key_state(VK_DOWN)) {
+		cameraPitch -= ROT_SPEED * dt;
+		if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
+		if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
+		update_camera();
+		shouldUpdateView = true;
+	}
 
-				projTri.data[0].x += 1.0f; projTri.data[0].y += 1.0f;
-				projTri.data[1].x += 1.0f; projTri.data[1].y += 1.0f;
-				projTri.data[2].x += 1.0f; projTri.data[2].y += 1.0f;
+	if (mouse_state(MBTN_LEFT)) {
+		int dx = (int)(mousePos.x - mousePosOld.x);
+		int dy = (int)(mousePos.y - mousePosOld.y);
+		cameraYaw += dx * ROT_SPEED * dt / (float)e->console->chr_width;
+		cameraPitch -= dy * ROT_SPEED * dt / (float)e->console->chr_height;
+		if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
+		if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
+		update_camera();
+		shouldUpdateView = true;
+		mousePosOld = mousePos;
+	}
 
-				projTri.data[0].x *= 0.5f * (float)e->console->width;
-				projTri.data[1].x *= 0.5f * (float)e->console->width;
-				projTri.data[2].x *= 0.5f * (float)e->console->width;
-				projTri.data[0].y *= 0.5f * (float)e->console->height;
-				projTri.data[1].y *= 0.5f * (float)e->console->height;
-				projTri.data[2].y *= 0.5f * (float)e->console->height;
+	if (shouldUpdateView) {
+		update_view_matrix();
+		shouldUpdateView = false;
+	}
 
-				vector_append(&rasterQueue, &projTri);
+	object* ship = vector_get(&objects, 1);
+	if (key_state('I'))	ship->velocity.z += 1.0f * dt;
+	if (key_state('K'))	ship->velocity.z -= 1.0f * dt;
+	if (key_state('L'))	ship->velocity.x += 1.0f * dt;
+	if (key_state('J'))	ship->velocity.x -= 1.0f * dt;
+}
 
-				free(node);
+void render_objects(engine* e) {
+	vector rasterQueue = vector_create(sizeof(triangle));
+	for (size_t o = 0; o < objects.length; o++) {
+		mesh* currentMesh = &((object*)vector_get(&objects, o))->mesh;
+		for (size_t i = 0; i < currentMesh->triangles.length; i++) {
+			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&currentMesh->triangles, i), currentMesh->matrix, true);
+			vec4 line1 = vector_sub(modelTri.data[1], modelTri.data[0]);
+			vec4 line2 = vector_sub(modelTri.data[2], modelTri.data[0]);
+			vec4 normal = vector_cross(line1, line2);
+			normal = vector_normalize(normal);
+			vec4 cameraRay = vector_sub(modelTri.data[0], cameraPos);
+			if (vector_dot(normal, cameraRay) < 0.0f) {
+				vec4 lightDir = vector_normalize((vec4) { 0.0f, 1.0f, 1.0f });
+				float dp = vector_dot(normal, lightDir);
+				CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
+
+				triangle viewTri = triangle_multiply_matrix(modelTri, viewMatrix, true);
+				viewTri.color = c.Attributes;
+				viewTri.symbol = c.Char.UnicodeChar;
+
+				triangle clipped[2];
+				linked_list clipQueue = { 0 };
+				list_push_back(&clipQueue, sizeof(triangle), &viewTri);
+				size_t clipCount = 1;
+
+				for (int p = 0; p < 6; p++) {
+					size_t toAdd = 0;
+					while (clipCount > 0) {
+						list_node* front = list_pop_front(&clipQueue);
+						triangle* test = (triangle*)&front->data;
+						clipCount--;
+						switch (p) {
+						case 0: // near
+							toAdd = triangle_clip((vec4) { 0.0f, 0.0f, Z_NEAR }, (vec4) { 0.0f, 0.0f, 1.0f }, test, & clipped[0], & clipped[1]);
+							break;
+						case 1: // far
+							toAdd = triangle_clip((vec4) { 0.0f, 0.0f, Z_FAR }, (vec4) { 0.0f, 0.0f, -1.0f }, test, & clipped[0], & clipped[1]);
+							break;
+						case 2: // left
+							toAdd = triangle_clip((vec4) { 0 }, clipNormalLeft, test, & clipped[0], & clipped[1]);
+							break;
+						case 3: // right
+							toAdd = triangle_clip((vec4) { 0 }, clipNormalRight, test, & clipped[0], & clipped[1]);
+							break;
+						case 4: // bottom
+							toAdd = triangle_clip((vec4) { 0 }, clipNormalBottom, test, & clipped[0], & clipped[1]);
+							break;
+						case 5: // top
+							toAdd = triangle_clip((vec4) { 0 }, clipNormalTop, test, & clipped[0], & clipped[1]);
+							break;
+						}
+						for (size_t w = 0; w < toAdd; w++) {
+							list_push_back(&clipQueue, sizeof(triangle), &clipped[w]);
+						}
+						free(front);
+					}
+					clipCount = clipQueue.length;
+				}
+
+				while (clipQueue.head) {
+					list_node* node = list_pop_front(&clipQueue);
+					triangle* clippedTri = (triangle*)&node->data;
+
+					triangle projTri = triangle_multiply_matrix(*clippedTri, projectionMatrix, true);
+					
+					projTri.color = clippedTri->color;
+					projTri.symbol = clippedTri->symbol;
+					//projTri.color = colorPixel.Attributes;
+					//projTri.symbol = colorPixel.Char.UnicodeChar;
+
+					projTri.data[0].x *= -1.0f; 
+					projTri.data[0].y *= -1.0f;
+					projTri.data[1].x *= -1.0f; 
+					projTri.data[1].y *= -1.0f;
+					projTri.data[2].x *= -1.0f; 
+					projTri.data[2].y *= -1.0f;
+
+					projTri.data[0].x += 1.0f; projTri.data[0].y += 1.0f;
+					projTri.data[1].x += 1.0f; projTri.data[1].y += 1.0f;
+					projTri.data[2].x += 1.0f; projTri.data[2].y += 1.0f;
+
+					projTri.data[0].x *= 0.5f * (float)e->console->width;
+					projTri.data[1].x *= 0.5f * (float)e->console->width;
+					projTri.data[2].x *= 0.5f * (float)e->console->width;
+					projTri.data[0].y *= 0.5f * (float)e->console->height;
+					projTri.data[1].y *= 0.5f * (float)e->console->height;
+					projTri.data[2].y *= 0.5f * (float)e->console->height;
+
+					vector_append(&rasterQueue, &projTri);
+					free(node);
+				}
+				list_destroy(&clipQueue);
 			}
-
-			list_destroy(&clipQueue);
 		}
 	}
 
 	qsort(rasterQueue.data, rasterQueue.length, rasterQueue.itemSize, triangle_compare);
 
-	for (int i = 0; i < rasterQueue.length; i++) {
+	for (size_t i = 0; i < rasterQueue.length; i++) {
 		triangle* t = vector_get(&rasterQueue, i);
 		console_fill_triangle(
 			e->console,
@@ -309,12 +402,12 @@ bool game_update(engine* e, float dt) {
 	}
 
 	vector_destroy(&rasterQueue);
-
-	return !key_state(VK_ESCAPE);
 }
 
 void game_teardown(engine* e) {
-	free(model.data);
+	for (size_t i = 0; i < objects.length; i++)
+		vector_destroy(&((object*)vector_get(&objects, i))->mesh.triangles);
+	vector_destroy(&objects);
 }
 
 void game_key_down(engine* e, int k) {
@@ -336,8 +429,8 @@ void game_mouse_btn(engine* e, int m, bool p) {
 }
 
 void game_mouse_move(engine* e, int x, int y) {
-	mousePos.x = x;
-	mousePos.y = y;
+	mousePos.x = (float)x;
+	mousePos.y = (float)y;
 }
 
 bool mouse_state(int m) {
@@ -355,12 +448,12 @@ void update_view_matrix() {
 	viewMatrix = matrix_quick_inverse(cameraMatrix);
 }
 
-void update_model_matrix(float theta) {
-	modelMatrix = matrix_identity();
-	modelMatrix = matrix_multiply_matrix(modelMatrix, matrix_rotation_z(theta));
-	modelMatrix = matrix_multiply_matrix(modelMatrix, matrix_rotation_x(theta * 0.5f));
-	modelMatrix = matrix_multiply_matrix(modelMatrix, matrix_translation(0.0f, 0.0f, 6.0f));
-
+void update_model_matrix(mesh* m, float rx, float ry, float rz, float px, float py, float pz) {
+	m->matrix = matrix_identity();
+	m->matrix = matrix_multiply_matrix(m->matrix, matrix_rotation_z(rz));
+	m->matrix = matrix_multiply_matrix(m->matrix, matrix_rotation_y(ry));
+	m->matrix = matrix_multiply_matrix(m->matrix, matrix_rotation_x(rx));
+	m->matrix = matrix_multiply_matrix(m->matrix, matrix_translation(px, py, pz));
 }
 
 void update_camera() {
@@ -412,4 +505,90 @@ CHAR_INFO grey_pixel(float l) {
 	c.Attributes = bg_col | fg_col;
 	c.Char.UnicodeChar = sym;
 	return c;
+}
+
+CHAR_INFO compare_colors(float v1, float v2, float c1, float c2, short FG_LIGHT, short FG_DARK, short BG_LIGHT, short BG_DARK) {
+	unsigned int fgColor = 0;
+	unsigned int bgColor = 0;
+	wchar_t symbol = 0;
+	float shading = 0.5f;
+	if (v1 >= v2) {
+		fgColor = c1 > 0.5f ? FG_LIGHT : FG_DARK;
+		if (v2 < 0.0001f) {
+			if (c2 >= 0.00f && c2 < 0.25f) bgColor = BG_BLACK;
+			if (c2 >= 0.25f && c2 < 0.50f) bgColor = BG_DARK_GREY;
+			if (c2 >= 0.50f && c2 < 0.75f) bgColor = BG_GREY;
+			if (c2 >= 0.75f && c2 < 1.00f) bgColor = BG_WHITE;
+		} else {
+			bgColor = c2 > 0.5f ? BG_LIGHT : BG_DARK;
+		}
+		shading = ((c1 - c2) / 2.0f) + 0.5f;
+	}
+
+	if (shading >= 0.00f && shading < 0.20f) symbol = L' ';
+	if (shading >= 0.20f && shading < 0.40f) symbol = PX_QUARTER;
+	if (shading >= 0.40f && shading < 0.60f) symbol = PX_HALF;
+	if (shading >= 0.60f && shading < 0.80f) symbol = PX_THREEQUARTERS;
+	if (shading >= 0.80f) symbol = PX_SOLID;
+
+	CHAR_INFO c;
+	c.Attributes = fgColor | bgColor << 4;
+	c.Char.UnicodeChar = symbol;
+	return c;
+}
+
+CHAR_INFO color_pixel(float r, float g, float b) {
+	float mean = (r + g + b) / 3.0f;
+	float rVar = (r - mean) * (r - mean);
+	float gVar = (g - mean) * (g - mean);
+	float bVar = (b - mean) * (b - mean);
+	float variance = rVar + gVar + bVar;
+
+	if (variance < 0.0001f) {
+		return grey_pixel(0.2987f * r + 0.5870f * g + 0.1140f * b);
+	}
+
+	float y = min(r, g);
+	float c = min(g, b);
+	float m = min(b, r);
+
+	float mean2 = (y + c + m) / 3.0f;
+	float yVar = (y - mean2) * (y - mean2);
+	float cVar = (c - mean2) * (c - mean2);
+	float mVar = (m - mean2) * (m - mean2);
+
+	float maxPrimaryVar = max(rVar, gVar);
+	maxPrimaryVar = max(maxPrimaryVar, bVar);
+
+	float maxSecondaryVar = max(cVar, yVar);
+	maxSecondaryVar = max(maxSecondaryVar, mVar);
+
+	if (rVar == maxPrimaryVar && yVar == maxSecondaryVar)
+		return compare_colors(rVar, yVar, r, y, FG_RED, FG_DARK_RED, BG_YELLOW, BG_DARK_YELLOW);
+
+	if (rVar == maxPrimaryVar && mVar == maxSecondaryVar)
+		return compare_colors(rVar, mVar, r, m, FG_RED, FG_DARK_RED, BG_MAGENTA, BG_DARK_MAGENTA);
+
+	if (rVar == maxPrimaryVar && cVar == maxSecondaryVar)
+		return compare_colors(rVar, cVar, r, c, FG_RED, FG_DARK_RED, BG_CYAN, BG_DARK_CYAN);
+
+	if (gVar == maxPrimaryVar && yVar == maxSecondaryVar)
+		return compare_colors(gVar, yVar, g, y, FG_GREEN, FG_DARK_GREEN, BG_YELLOW, BG_DARK_YELLOW);
+
+	if (gVar == maxPrimaryVar && cVar == maxSecondaryVar)
+		return compare_colors(gVar, cVar, g, c, FG_GREEN, FG_DARK_GREEN, BG_CYAN, BG_DARK_CYAN);
+
+	if (gVar == maxPrimaryVar && mVar == maxSecondaryVar)
+		return compare_colors(gVar, mVar, g, m, FG_GREEN, FG_DARK_GREEN, BG_MAGENTA, BG_DARK_MAGENTA);
+
+	if (bVar == maxPrimaryVar && mVar == maxSecondaryVar)
+		return compare_colors(bVar, mVar, b, m, FG_BLUE, FG_DARK_BLUE, BG_MAGENTA, BG_DARK_MAGENTA);
+
+	if (bVar == maxPrimaryVar && cVar == maxSecondaryVar)
+		return compare_colors(bVar, cVar, b, c, FG_BLUE, FG_DARK_BLUE, BG_CYAN, BG_DARK_CYAN);
+
+	if (bVar == maxPrimaryVar && yVar == maxSecondaryVar)
+		return compare_colors(bVar, yVar, b, y, FG_BLUE, FG_DARK_BLUE, BG_YELLOW, BG_DARK_YELLOW);
+
+	return (CHAR_INFO){ 0 };
 }

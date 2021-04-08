@@ -13,8 +13,9 @@ typedef struct {
 } triangle;
 
 typedef struct {
-	size_t length;
-	triangle* data;
+	mat4 matrix;
+	vector triangles;
+	float r, g, b;
 } mesh;
 
 int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2) {
@@ -136,8 +137,8 @@ mesh mesh_from_obj(const char* path) {
 	fclose(obj);
 
 	mesh m = {
-		.length = triangles.length,
-		.data = triangles.data,
+		.matrix = matrix_identity(),
+		.triangles = triangles,
 	};
 
 	return m;
