@@ -29,7 +29,7 @@ vector vector_create(size_t itemSize) {
 }
 
 void vector_resize(vector* v, size_t capacity) {
-	void* data = (void**)realloc(v->data, v->itemSize * capacity);
+	void* data = realloc(v->data, v->itemSize * capacity);
 	if (data) {
 		v->data = data;
 		v->capacity = capacity;

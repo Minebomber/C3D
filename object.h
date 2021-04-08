@@ -16,6 +16,7 @@ typedef struct object {
 	bool fixed;
 	box boundingBox;
 	float elasticity;
+	float mass;
 	void (*cbSetup)(struct object*, engine*);
 	void (*cbUpdate)(struct object*, engine*, float);
 	void (*cbTeardown)(struct object*, engine*);
@@ -92,6 +93,9 @@ box bbox_for_mesh(mesh* m) {
 void object_update(object* o, engine* e, float dt) {
 	if (!o->fixed) {
 		o->velocity = vector_add(o->velocity, vector_mul(o->acceleration, dt));
+		if (o->acceleration.x == 0.0f && fabsf(o->velocity.x < 0.1f)) o->velocity.x = 0.0f;
+		if (o->acceleration.y == 0.0f && fabsf(o->velocity.y < 0.1f)) o->velocity.y = 0.0f;
+		if (o->acceleration.z == 0.0f && fabsf(o->velocity.z < 0.1f)) o->velocity.z = 0.0f;
 		o->position = vector_add(o->position, vector_mul(o->velocity, dt));
 	}
 	o->mesh.matrix = matrix_translation(o->position.x, o->position.y, o->position.z);

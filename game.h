@@ -119,10 +119,10 @@ bool game_setup(engine* e) {
 	object obj = {
 		.mesh = model,
 		.cbUpdate = object_update,
-		.fixed = false,
+		.fixed = true,
 		.boundingBox = bbox_for_mesh(&model),
-		.elasticity = 1.0f,
-		.position = {0.0f, 0.0f, 0.0f},
+		.elasticity = 0.0f,
+		.position = {0.0f, -10.0f, 0.0f},
 		.velocity = {0.0f, 0.0f, 0.0f},
 		.acceleration = {0.0f, 0.0f, 0.0f},
 
@@ -133,12 +133,12 @@ bool game_setup(engine* e) {
 	obj = (object){
 		.mesh = model,
 		.cbUpdate = object_update,
-		.position = {-25.0f, 0.0f, -25.0f},
-		.velocity = {4.0f, 0.0f, 3.0f},
-		.acceleration = {0.5f, 0.0f, 0.5f},
+		.position = {5.0f, 25.0f, 5.0f},
+		.velocity = {0.0f, 0.0f, 0.0f},
+		.acceleration = {0.0f, -9.8f, 0.0f},
 		.fixed = false,
 		.boundingBox = bbox_for_mesh(&model),
-		.elasticity = 1.0f,
+		.elasticity = 0.5f,
 	};
 	vector_append(&objects, &obj);
 
@@ -167,14 +167,19 @@ bool game_setup(engine* e) {
 bool game_update(engine* e, float dt) {
 	runningTime += dt;
 
+	for (size_t i = 0; i < objects.length; i++) {
+		object* o = (object*)vector_get(&objects, i);
+		o->acceleration = (vec4){ 0.0f, -9.8f, 0.0f };
+	}
+
 	process_movement(e, dt);
+
+	process_collisions(e);
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
 		if (o->cbUpdate) o->cbUpdate(o, e, dt);
 	}
-
-	process_collisions(e);
 
 	render_objects(e);
 
@@ -197,10 +202,16 @@ void process_collisions(engine* e) {
 				vec4 dist = object_collision_distance(o1, o2);
 				if (less(dist.x, dist.y) && less(dist.x, dist.z)) {
 					o1->position.x -= dist.x;
+					o1->velocity.x *= -1.0f * o1->elasticity;
+					o1->acceleration.x = 0.0f;
 				} else if (less(dist.y, dist.x) && less(dist.y, dist.z)) {
 					o1->position.y -= dist.y;
+					o1->velocity.y *= -1.0f * o1->elasticity;
+					o1->acceleration.y = 0.0f;
 				} else if (less(dist.z, dist.x) && less(dist.z, dist.y)) {
 					o1->position.z -= dist.z;
+					o1->velocity.z *= -1.0f * o1->elasticity;
+					o1->acceleration.z = 0.0f;
 				}
 			}
 		}
@@ -278,10 +289,10 @@ void process_movement(engine* e, float dt) {
 	}
 
 	object* ship = vector_get(&objects, 1);
-	if (key_state('I'))	ship->velocity.z += 1.0f * dt;
-	if (key_state('K'))	ship->velocity.z -= 1.0f * dt;
-	if (key_state('L'))	ship->velocity.x += 1.0f * dt;
-	if (key_state('J'))	ship->velocity.x -= 1.0f * dt;
+	if (key_state('I'))	ship->velocity.z += 3.0f * dt;
+	if (key_state('K'))	ship->velocity.z -= 3.0f * dt;
+	if (key_state('L'))	ship->velocity.x -= 3.0f * dt;
+	if (key_state('J'))	ship->velocity.x += 3.0f * dt;
 }
 
 void render_objects(engine* e) {
