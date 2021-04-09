@@ -33,8 +33,14 @@
     <ClCompile Include="console.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="game.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="linked_list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="engine.c">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
