@@ -7,6 +7,7 @@ void object_update(object* o, engine* e, float dt) {
 		if (o->acceleration.y == 0.0f && fabsf(o->velocity.y) < 0.1f) o->velocity.y = 0.0f;
 		if (o->acceleration.z == 0.0f && fabsf(o->velocity.z) < 0.1f) o->velocity.z = 0.0f;
 		o->position = vector_add(o->position, vector_mul(o->velocity, dt));
+		o->velocity = vector_mul(o->velocity, o->friction);
 	}
 	o->mesh.matrix = matrix_translation(o->position.x, o->position.y, o->position.z);
 }

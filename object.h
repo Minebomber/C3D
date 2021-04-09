@@ -16,6 +16,7 @@ typedef struct object {
 	bool fixed;
 	box boundingBox;
 	float elasticity;
+	float friction;
 	void (*cbSetup)(struct object*, engine*);
 	void (*cbUpdate)(struct object*, engine*, float);
 	void (*cbTeardown)(struct object*, engine*);

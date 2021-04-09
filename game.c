@@ -39,6 +39,7 @@ bool game_setup(engine* e) {
 		.velocity = {0.0f, 0.0f, 0.0f},
 		.acceleration = {0.0f, -9.8f, 0.0f},
 		.fixed = false,
+		.friction = 0.95f,
 		.boundingBox = bbox_for_mesh(&model),
 		.elasticity = 0.0f,
 	};
@@ -71,7 +72,7 @@ bool game_update(engine* e, float dt) {
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
-		o->acceleration = (vec4){ 0.0f, -9.8f, 0.0f };
+		o->acceleration = (vec4){ 0.0f, -10.0f, 0.0f };
 	}
 
 	process_movement(e, dt);
@@ -174,12 +175,12 @@ void process_movement(engine* e, float dt) {
 	}
 
 	object* ship = vector_get(&objects, 1);
-	if (key_state('I'))	ship->velocity.z += 3.0f * dt;
-	if (key_state('K'))	ship->velocity.z -= 3.0f * dt;
-	if (key_state('L'))	ship->velocity.x -= 3.0f * dt;
-	if (key_state('J'))	ship->velocity.x += 3.0f * dt;
-	if (key_state('U'))	ship->velocity.y -= 3.0f * dt;
-	if (key_state('O'))	ship->velocity.y += 12.8f * dt;
+	if (key_state('I'))	ship->acceleration.z += 20.0f;
+	if (key_state('K'))	ship->acceleration.z -= 20.0f;
+	if (key_state('L'))	ship->acceleration.x -= 20.0f;
+	if (key_state('J'))	ship->acceleration.x += 20.0f;
+	if (key_state('U'))	ship->acceleration.y -= 10.0f;
+	if (key_state('O'))	ship->acceleration.y += 30.0f;
 }
 
 void render_objects(engine* e) {
