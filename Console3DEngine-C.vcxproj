@@ -140,10 +140,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="console.c" />
+    <ClCompile Include="engine.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="mesh.c" />
+    <ClCompile Include="object.c" />
+    <ClCompile Include="vector.c" />
+    <ClCompile Include="vmath.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console.h" />
+    <ClInclude Include="constants.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="linked_list.h" />

@@ -7,37 +7,6 @@
 #include "linked_list.h"
 #include "object.h"
 
-#define MOV_SPEED 8.0f
-#define ROT_SPEED 1.0f
-
-#define H_FOV 90.0f
-#define Z_NEAR 0.1f
-#define Z_FAR 100.0f
-
-#define M_PI		3.14159265358979323846f	/* pi */
-#define M_PI_2		1.57079632679489661923f	/* pi/2 */
-#define M_PI_4		0.78539816339744830962f	/* pi/4 */
-#define M_1_PI		0.31830988618379067154f	/* 1/pi */
-#define M_2_PI		0.63661977236758134308f	/* 2/pi */
-
-enum DRAW_MODE {
-	DM_SOLID = 0x1,
-	DM_WIREFRAME = 0x2,
-};
-
-enum FACE_CULL {
-	FC_FRONT = 0x1,
-	FC_BACK = 0x2,
-};
-
-enum MOUSE_BUTTONS {
-	MBTN_LEFT = FROM_LEFT_1ST_BUTTON_PRESSED,
-	MBTN_RIGHT = RIGHTMOST_BUTTON_PRESSED,
-	MBTN_CENTER = FROM_LEFT_2ND_BUTTON_PRESSED,
-	MBTN_EXTRA1 = FROM_LEFT_3RD_BUTTON_PRESSED,
-	MBTN_EXTRA2 = FROM_LEFT_4TH_BUTTON_PRESSED
-};
-
 float vFov;
 
 mat4 projectionMatrix;
@@ -133,7 +102,7 @@ bool game_setup(engine* e) {
 		.acceleration = {0.0f, -9.8f, 0.0f},
 		.fixed = false,
 		.boundingBox = bbox_for_mesh(&model),
-		.elasticity = 0.75f,
+		.elasticity = 0.0f,
 	};
 	vector_append(&objects, &obj);
 

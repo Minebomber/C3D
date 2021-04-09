@@ -1,10 +1,5 @@
 #include "game.h"
 
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 240
-#define CHAR_WIDTH 2
-#define CHAR_HEIGHT 2
-
 int main(int argc, char* argv[]) {
 	engine e = {
 		.console = console_create(SCREEN_WIDTH, SCREEN_HEIGHT, CHAR_WIDTH, CHAR_HEIGHT),
