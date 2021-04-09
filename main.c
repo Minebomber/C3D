@@ -2,8 +2,8 @@
 
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
-#define CHAR_WIDTH 3
-#define CHAR_HEIGHT 3
+#define CHAR_WIDTH 2
+#define CHAR_HEIGHT 2
 
 int main(int argc, char* argv[]) {
 	engine e = {

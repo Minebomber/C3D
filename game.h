@@ -42,8 +42,6 @@ float vFov;
 
 mat4 projectionMatrix;
 mat4 viewMatrix;
-mat4 modelMatrix;
-
 vector objects;
 
 vec4 clipNormalLeft, clipNormalRight, clipNormalBottom, clipNormalTop;
@@ -135,7 +133,7 @@ bool game_setup(engine* e) {
 		.acceleration = {0.0f, -9.8f, 0.0f},
 		.fixed = false,
 		.boundingBox = bbox_for_mesh(&model),
-		.elasticity = 0.5f,
+		.elasticity = 0.75f,
 	};
 	vector_append(&objects, &obj);
 
@@ -274,7 +272,7 @@ void process_movement(engine* e, float dt) {
 	if (key_state('L'))	ship->velocity.x -= 3.0f * dt;
 	if (key_state('J'))	ship->velocity.x += 3.0f * dt;
 	if (key_state('U'))	ship->velocity.y -= 3.0f * dt;
-	if (key_state('P'))	ship->velocity.y += 12.8f * dt;
+	if (key_state('O'))	ship->velocity.y += 12.8f * dt;
 }
 
 void render_objects(engine* e) {
