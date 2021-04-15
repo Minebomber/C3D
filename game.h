@@ -1,7 +1,7 @@
 #pragma once
 #include <stdbool.h>
 #include "engine.h"
-#include "vmath.h"
+#include "vmath2.h"
 #include "mesh.h"
 #include "vector.h"
 #include "linked_list.h"
@@ -13,9 +13,9 @@ mat4 projectionMatrix;
 mat4 viewMatrix;
 vector objects;
 
-vec4 clipNormalLeft, clipNormalRight, clipNormalBottom, clipNormalTop;
+vec3 clipNormalLeft, clipNormalRight, clipNormalBottom, clipNormalTop;
 
-vec4 cameraPos, cameraDir, cameraStrafe;
+vec3 cameraPos, cameraDir, cameraStrafe;
 float cameraYaw, cameraPitch;
 
 bool keyStates[256];
@@ -44,7 +44,6 @@ bool key_state(int k);
 bool mouse_state(int m);
 
 void update_view_matrix();
-void update_model_matrix(mesh* m, float rx, float ry, float rz, float px, float py, float pz);
 
 void update_camera();
 void camera_move(float d);
@@ -53,7 +52,5 @@ void camera_fly(float d);
 
 CHAR_INFO grey_pixel(float l);
 
-float radians(float d);
-float degrees(float r);
 float horizontal_to_vertical_fov(float hFov, float aspect);
 float rand_range(float min, float max);

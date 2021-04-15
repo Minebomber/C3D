@@ -1,13 +1,5 @@
 #include "game.h"
 
-float radians(float d) {
-	return d / 180.0f * M_PI;
-}
-
-float degrees(float r) {
-	return r / M_PI * 180.0f;
-}
-
 float horizontal_to_vertical_fov(float hFov, float aspect) {
 	return degrees(2.0f * atanf(aspect * tanf(radians(hFov / 2.0f))));
 }
@@ -21,13 +13,15 @@ bool game_setup(engine* e) {
 		.cbUpdate = object_update,
 		.cbCollision = object_collide,
 		.fixed = true,
-		.boundingBox = bbox_for_mesh(&model),
+		.boundingBox = box_for_mesh(&model),
+		.bBox = bbox_for_mesh(&model),
 		.elasticity = 0.0f,
-		.position = {0.0f, -10.0f, 0.0f},
+		.position = {0.0f, 0.0f, 0.0f},
 		.velocity = {0.0f, 0.0f, 0.0f},
 		.acceleration = {0.0f, 0.0f, 0.0f},
-
-	};
+		.scale = {1, 1, 1},
+		.rotation = {0, 0, 0},
+	};	
 	vector_append(&objects, &obj);
 
 	model = mesh_from_obj("ship.obj");
@@ -39,11 +33,30 @@ bool game_setup(engine* e) {
 		.velocity = {0.0f, 0.0f, 0.0f},
 		.acceleration = {0.0f, -9.8f, 0.0f},
 		.fixed = false,
-		.friction = 0.95f,
-		.boundingBox = bbox_for_mesh(&model),
-		.elasticity = 0.0f,
+		.boundingBox = box_for_mesh(&model),
+		.bBox = bbox_for_mesh(&model),
+		.elasticity = 0.9f,
+		.scale = {1, 1, 1},
+		.rotation = {0, M_PI_2 / 3.0f, 0},
 	};
 	vector_append(&objects, &obj);
+
+	/*model = mesh_from_obj("ship.obj");
+	obj = (object){
+		.mesh = model,
+		.cbUpdate = object_update,
+		.cbCollision = object_collide,
+		.position = {5.0f, 50.0f, 5.0f},
+		.velocity = {0.0f, 0.0f, 0.0f},
+		.acceleration = {0.0f, -9.8f, 0.0f},
+		.fixed = true,
+		.boundingBox = box_for_mesh(&model),
+		.bBox = bbox_for_mesh(&model),
+		.elasticity = 0.9f,
+		.scale = {1, 1, 1},
+		.rotation = {0, 0, 0},
+	};
+	vector_append(&objects, &obj);*/
 
 	float aspect = ((float)e->console->height * (float)e->console->chr_height) / ((float)e->console->width * (float)e->console->chr_width);
 	vFov = horizontal_to_vertical_fov(H_FOV, aspect);
@@ -53,15 +66,15 @@ bool game_setup(engine* e) {
 	float nC = cosf(radians(vFov / 2.0f));
 	float nD = sinf(radians(vFov / 2.0f));
 
-	clipNormalLeft = (vec4){ nA, 0.0f, nB };
-	clipNormalRight = (vec4){ -nA, 0.0f, nB };
-	clipNormalBottom = (vec4){ 0.0f, nC, nD };
-	clipNormalTop = (vec4){ 0.0f, -nC, nD };
+	clipNormalLeft = (vec3){ nA, 0.0f, nB };
+	clipNormalRight = (vec3){ -nA, 0.0f, nB };
+	clipNormalBottom = (vec3){ 0.0f, nC, nD };
+	clipNormalTop = (vec3){ 0.0f, -nC, nD };
 
-	projectionMatrix = matrix_projection(vFov, aspect, Z_NEAR, Z_FAR);
+	projectionMatrix = mat4_projection(vFov, aspect, Z_NEAR, Z_FAR);
 
-	cameraYaw = M_PI_2;
-	cameraPos = (vec4){ 10.0f, 15.0f, -20.0f };
+	cameraYaw = 3 * M_PI_2;
+	cameraPos = (vec3){ 5.0f, 15.0f, 15.0f };
 	update_camera();
 	shouldUpdateView = true;
 	return true;
@@ -72,7 +85,7 @@ bool game_update(engine* e, float dt) {
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
-		o->acceleration = (vec4){ 0.0f, -10.0f, 0.0f };
+		o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
 	}
 
 	process_movement(e, dt);
@@ -97,8 +110,9 @@ void process_collisions(engine* e) {
 			object* o2 = (object*)vector_get(&objects, j);
 			if (!o1->fixed && objects_colliding(o1, o2)) {
 				vec4 dist = object_collision_distance(o1, o2);
-				if (o1->cbCollision)
+				if (o1->cbCollision) {
 					o1->cbCollision(o1, o2, e, dist.x, dist.y, dist.z);
+				}
 			}
 		}
 	}
@@ -179,7 +193,7 @@ void process_movement(engine* e, float dt) {
 	if (key_state('K'))	ship->acceleration.z -= 20.0f;
 	if (key_state('L'))	ship->acceleration.x -= 20.0f;
 	if (key_state('J'))	ship->acceleration.x += 20.0f;
-	if (key_state('U'))	ship->acceleration.y -= 10.0f;
+	if (key_state('U'))	ship->acceleration.y -= 20.0f;
 	if (key_state('O'))	ship->acceleration.y += 30.0f;
 }
 
@@ -188,18 +202,18 @@ void render_objects(engine* e) {
 	for (size_t o = 0; o < objects.length; o++) {
 		mesh* currentMesh = &((object*)vector_get(&objects, o))->mesh;
 		for (size_t i = 0; i < currentMesh->triangles.length; i++) {
-			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&currentMesh->triangles, i), currentMesh->matrix, true);
-			vec4 line1 = vector_sub(modelTri.data[1], modelTri.data[0]);
-			vec4 line2 = vector_sub(modelTri.data[2], modelTri.data[0]);
-			vec4 normal = vector_cross(line1, line2);
-			normal = vector_normalize(normal);
-			vec4 cameraRay = vector_sub(modelTri.data[0], cameraPos);
-			if (vector_dot(normal, cameraRay) < 0.0f) {
-				vec4 lightDir = vector_normalize((vec4) { 0.0f, 1.0f, 1.0f });
-				float dp = vector_dot(normal, lightDir);
+			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&currentMesh->triangles, i), &currentMesh->matrix, true);
+			vec3 line1 = vec3_sub(modelTri.data[1].v3, modelTri.data[0].v3);
+			vec3 line2 = vec3_sub(modelTri.data[2].v3, modelTri.data[0].v3);
+			vec3 normal = vec3_cross(line1, line2);
+			normal = vec3_normalize(normal);
+			vec3 cameraRay = vec3_sub(modelTri.data[0].v3, cameraPos);
+			if (vec3_dot(normal, cameraRay) < 0.0f) {
+				vec3 lightDir = vec3_normalize((vec3) { 0.0f, 1.0f, 1.0f });
+				float dp = vec3_dot(normal, lightDir);
 				CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
 
-				triangle viewTri = triangle_multiply_matrix(modelTri, viewMatrix, true);
+				triangle viewTri = triangle_multiply_matrix(modelTri, &viewMatrix, true);
 				viewTri.color = c.Attributes;
 				viewTri.symbol = c.Char.UnicodeChar;
 
@@ -216,22 +230,22 @@ void render_objects(engine* e) {
 						clipCount--;
 						switch (p) {
 						case 0: // near
-							toAdd = triangle_clip((vec4) { 0.0f, 0.0f, Z_NEAR }, (vec4) { 0.0f, 0.0f, 1.0f }, test, & clipped[0], & clipped[1]);
+							toAdd = triangle_clip((vec3) { 0.0f, 0.0f, Z_NEAR }, (vec3) { 0.0f, 0.0f, 1.0f }, test, & clipped[0], & clipped[1]);
 							break;
 						case 1: // far
-							toAdd = triangle_clip((vec4) { 0.0f, 0.0f, Z_FAR }, (vec4) { 0.0f, 0.0f, -1.0f }, test, & clipped[0], & clipped[1]);
+							toAdd = triangle_clip((vec3) { 0.0f, 0.0f, Z_FAR }, (vec3) { 0.0f, 0.0f, -1.0f }, test, & clipped[0], & clipped[1]);
 							break;
 						case 2: // left
-							toAdd = triangle_clip((vec4) { 0 }, clipNormalLeft, test, & clipped[0], & clipped[1]);
+							toAdd = triangle_clip((vec3) { 0 }, clipNormalLeft, test, & clipped[0], & clipped[1]);
 							break;
 						case 3: // right
-							toAdd = triangle_clip((vec4) { 0 }, clipNormalRight, test, & clipped[0], & clipped[1]);
+							toAdd = triangle_clip((vec3) { 0 }, clipNormalRight, test, & clipped[0], & clipped[1]);
 							break;
 						case 4: // bottom
-							toAdd = triangle_clip((vec4) { 0 }, clipNormalBottom, test, & clipped[0], & clipped[1]);
+							toAdd = triangle_clip((vec3) { 0 }, clipNormalBottom, test, & clipped[0], & clipped[1]);
 							break;
 						case 5: // top
-							toAdd = triangle_clip((vec4) { 0 }, clipNormalTop, test, & clipped[0], & clipped[1]);
+							toAdd = triangle_clip((vec3) { 0 }, clipNormalTop, test, & clipped[0], & clipped[1]);
 							break;
 						}
 						for (size_t w = 0; w < toAdd; w++) {
@@ -246,7 +260,7 @@ void render_objects(engine* e) {
 					list_node* node = list_pop_front(&clipQueue);
 					triangle* clippedTri = (triangle*)&node->data;
 
-					triangle projTri = triangle_multiply_matrix(*clippedTri, projectionMatrix, true);
+					triangle projTri = triangle_multiply_matrix(*clippedTri, &projectionMatrix, true);
 
 					projTri.color = clippedTri->color;
 					projTri.symbol = clippedTri->symbol;
@@ -339,18 +353,10 @@ bool key_state(int k) {
 }
 
 void update_view_matrix() {
-	vec4 up = { 0.0f, 1.0f, 0.0f, 1.0f };
-	vec4 target = vector_add(cameraPos, cameraDir);
-	mat4 cameraMatrix = matrix_point_at(cameraPos, target, up);
-	viewMatrix = matrix_quick_inverse(cameraMatrix);
-}
-
-void update_model_matrix(mesh* m, float rx, float ry, float rz, float px, float py, float pz) {
-	m->matrix = matrix_identity();
-	m->matrix = matrix_multiply_matrix(m->matrix, matrix_rotation_z(rz));
-	m->matrix = matrix_multiply_matrix(m->matrix, matrix_rotation_y(ry));
-	m->matrix = matrix_multiply_matrix(m->matrix, matrix_rotation_x(rx));
-	m->matrix = matrix_multiply_matrix(m->matrix, matrix_translation(px, py, pz));
+	vec3 up = { 0.0f, 1.0f, 0.0f };
+	vec3 target = vec3_add(cameraPos, cameraDir);
+	mat4 cameraMatrix = mat4_point_at(cameraPos, target, up);
+	viewMatrix = mat4_quick_inverse(&cameraMatrix);
 }
 
 void update_camera() {

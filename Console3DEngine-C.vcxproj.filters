@@ -21,9 +21,6 @@
     <ClCompile Include="mesh.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vmath.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="vector.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -42,6 +39,9 @@
     <ClCompile Include="engine.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vmath2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console.h">
@@ -51,9 +51,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="game.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vmath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mesh.h">
@@ -69,6 +66,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vmath2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

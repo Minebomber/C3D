@@ -148,7 +148,7 @@
     <ClCompile Include="mesh.c" />
     <ClCompile Include="object.c" />
     <ClCompile Include="vector.c" />
-    <ClCompile Include="vmath.c" />
+    <ClCompile Include="vmath2.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console.h" />
@@ -159,7 +159,7 @@
     <ClInclude Include="mesh.h" />
     <ClInclude Include="object.h" />
     <ClInclude Include="vector.h" />
-    <ClInclude Include="vmath.h" />
+    <ClInclude Include="vmath2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,14 +1,14 @@
 #include "mesh.h"
 
-int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2) {
-	planeN = vector_normalize(planeN);
+int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2) {
+	planeN = vec3_normalize(planeN);
 
-	vec4* insidePoints[3]; size_t insideCount = 0;
-	vec4* outsidePoints[3]; size_t outsideCount = 0;
+	vec4u* insidePoints[3]; size_t insideCount = 0;
+	vec4u* outsidePoints[3]; size_t outsideCount = 0;
 
-	float d0 = vector_dist_to_plane(planeP, planeN, toClip->data[0]);
-	float d1 = vector_dist_to_plane(planeP, planeN, toClip->data[1]);
-	float d2 = vector_dist_to_plane(planeP, planeN, toClip->data[2]);
+	float d0 = vec3_dist_to_plane(planeP, planeN, toClip->data[0].v3);
+	float d1 = vec3_dist_to_plane(planeP, planeN, toClip->data[1].v3);
+	float d2 = vec3_dist_to_plane(planeP, planeN, toClip->data[2].v3);
 
 	if (d0 >= 0.0f) { insidePoints[insideCount++] = &toClip->data[0]; } else { outsidePoints[outsideCount++] = &toClip->data[0]; }
 
@@ -31,8 +31,8 @@ int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1
 
 		clipped1->data[0] = *insidePoints[0];
 
-		clipped1->data[1] = vector_intersect_plane(planeP, planeN, *insidePoints[0], *outsidePoints[0]);
-		clipped1->data[2] = vector_intersect_plane(planeP, planeN, *insidePoints[0], *outsidePoints[1]);
+		clipped1->data[1] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[0]->v3)}; clipped1->data[1].w = 1.0f;
+		clipped1->data[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[1]->v3) }; clipped1->data[2].w = 1.0f;
 
 		return 1;
 	}
@@ -45,11 +45,11 @@ int triangle_clip(vec4 planeP, vec4 planeN, triangle* toClip, triangle* clipped1
 
 		clipped1->data[0] = *insidePoints[0];
 		clipped1->data[1] = *insidePoints[1];
-		clipped1->data[2] = vector_intersect_plane(planeP, planeN, *insidePoints[0], *outsidePoints[0]);
+		clipped1->data[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[0]->v3) }; clipped1->data[2].w = 1.0f;
 
 		clipped2->data[0] = *insidePoints[1];
 		clipped2->data[1] = clipped1->data[2];
-		clipped2->data[2] = vector_intersect_plane(planeP, planeN, *insidePoints[1], *outsidePoints[0]);
+		clipped2->data[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[1]->v3, outsidePoints[0]->v3) }; clipped2->data[2].w = 1.0f;
 
 		return 2;
 	}
@@ -67,16 +67,16 @@ int triangle_compare(const void* a, const void* b) {
 	return 0;
 }
 
-triangle triangle_multiply_matrix(triangle t, mat4 m, bool scale) {
+triangle triangle_multiply_matrix(triangle t, mat4* m, bool scale) {
 	triangle u = {
-		matrix_multiply_vector(m, t.data[0]),
-		matrix_multiply_vector(m, t.data[1]),
-		matrix_multiply_vector(m, t.data[2]),
+		(vec4u) { .v4 = mat4_mul_vec4(m, t.data[0].v4) },
+		(vec4u) { .v4 = mat4_mul_vec4(m, t.data[1].v4) },
+		(vec4u) { .v4 = mat4_mul_vec4(m, t.data[2].v4) },
 	};
 	if (scale) {
-		u.data[0] = vector_scale_w(u.data[0]);
-		u.data[1] = vector_scale_w(u.data[1]);
-		u.data[2] = vector_scale_w(u.data[2]);
+		u.data[0].v4 = vec4_scale_w(u.data[0].v4);
+		u.data[1].v4 = vec4_scale_w(u.data[1].v4);
+		u.data[2].v4 = vec4_scale_w(u.data[2].v4);
 	}
 	return u;
 }
@@ -91,7 +91,7 @@ mesh mesh_from_obj(const char* path) {
 		if (line[0] == 'v') {
 			char junk;
 			float x, y, z;
-			sscanf(line, "%c %f %f %f", &junk, &x, &y, &z);
+			int _ = sscanf(line, "%c %f %f %f", &junk, &x, &y, &z);
 			vec4 v = { x, y, z, 1.0f };
 			vector_append(&vertices, &v);
 		}
@@ -99,12 +99,12 @@ mesh mesh_from_obj(const char* path) {
 		if (line[0] == 'f') {
 			char junk;
 			size_t i, j, k;
-			sscanf(line, "%c %d %d %d", &junk, &i, &j, &k);
+			int _ = sscanf(line, "%c %d %d %d", &junk, &i, &j, &k);
 			triangle t = {
 				{
-					*(vec4*)vector_get(&vertices, i - 1),
-					*(vec4*)vector_get(&vertices, j - 1),
-					*(vec4*)vector_get(&vertices, k - 1),
+					(vec4u) { .v4 = *(vec4*)vector_get(&vertices, i - 1) },
+					(vec4u) { .v4 = *(vec4*)vector_get(&vertices, j - 1) },
+					(vec4u) { .v4 = *(vec4*)vector_get(&vertices, k - 1) },
 				},
 				0, 0
 			};
@@ -116,7 +116,7 @@ mesh mesh_from_obj(const char* path) {
 	fclose(obj);
 
 	mesh m = {
-		.matrix = matrix_identity(),
+		.matrix = mat4_identity(),
 		.triangles = triangles,
 	};
 
