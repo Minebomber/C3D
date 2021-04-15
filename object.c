@@ -9,6 +9,7 @@ void object_update(object* o, engine* e, float dt) {
 		if (o->acceleration.z == 0.0f && fabsf(o->velocity.z) < 0.1f) o->velocity.z = 0.0f;
 		o->position = vec3_add(o->position, vec3_mul_scalar(o->velocity, dt));
 	}
+	if (fabsf(o->position.y) > 100.0f) o->position.y *= -1.0f;
 	object_update_matrix(o);
 }
 
@@ -20,16 +21,19 @@ void object_update_matrix(object* o) {
 
 void object_collide(object* o1, object* o2, engine* e, float dx, float dy, float dz) {
 	if (less(dx, dy) && less(dx, dz)) {
-		o1->position.x -= dx;
+		o1->position.x -= o2->fixed ? dx : dx / 2.0f;
 		o1->velocity.x *= -1.0f * o1->elasticity;
+		o1->velocity.x += o2->velocity.x / 2.0f;
 		o1->acceleration.x = 0.0f;
 	} else if (less(dy, dx) && less(dy, dz)) {
-		o1->position.y -= dy;
+		o1->position.y -= o2->fixed ? dy : dy / 2.0f;
 		o1->velocity.y *= -1.0f * o1->elasticity;
+		o1->velocity.y += o2->velocity.y / 2.0f;
 		o1->acceleration.y = 0.0f;
 	} else if (less(dz, dx) && less(dz, dy)) {
-		o1->position.z -= dz;
+		o1->position.z -= o2->fixed ? dz : dz / 2.0f;
 		o1->velocity.z *= -1.0f * o1->elasticity;
+		o1->velocity.z += o2->velocity.z / 2.0f;
 		o1->acceleration.z = 0.0f;
 	}
 	return;
@@ -72,8 +76,8 @@ bool objects_colliding(object* o1, object* o2) {
 int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2) {
 	planeN = vec3_normalize(planeN);
 
-	vec4u* insidePoints[3]; size_t insideCount = 0;
-	vec4u* outsidePoints[3]; size_t outsideCount = 0;
+	vec4u* insidePoints[3] = { 0 }; size_t insideCount = 0;
+	vec4u* outsidePoints[3] = { 0 }; size_t outsideCount = 0;
 
 	float d0 = vec3_dist_to_plane(planeP, planeN, toClip->data[0].v3);
 	float d1 = vec3_dist_to_plane(planeP, planeN, toClip->data[1].v3);
@@ -95,7 +99,7 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 	}
 
 	if (insideCount == 1 && outsideCount == 2) {
-		clipped1->color = FG_BLUE; // toClip->color;
+		clipped1->color = toClip->color;
 		clipped1->symbol = toClip->symbol;
 
 		clipped1->data[0] = *insidePoints[0];
@@ -107,9 +111,9 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 	}
 
 	if (insideCount == 2 && outsideCount == 1) {
-		clipped1->color = FG_GREEN; // toClip->color;
+		clipped1->color = toClip->color;
 		clipped1->symbol = toClip->symbol;
-		clipped2->color = FG_RED; // toClip->color;
+		clipped2->color = toClip->color;
 		clipped2->symbol = toClip->symbol;
 
 		clipped1->data[0] = *insidePoints[0];

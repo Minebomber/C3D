@@ -43,7 +43,7 @@ typedef struct object {
 	float elasticity;
 	vec3 scale;
 	vec3 rotation;
-
+	unsigned short color;
 	void (*cbSetup)(struct object*, engine*);
 	void (*cbUpdate)(struct object*, engine*, float);
 	void (*cbTeardown)(struct object*, engine*);

@@ -22,6 +22,7 @@ bool game_setup(engine* e) {
 		.acceleration = {0.0f, 0.0f, 0.0f},
 		.scale = {1, 1, 1},
 		.rotation = {0, 0, 0},
+		.color = FG_RED,
 	};	
 	vector_append(&objects, &obj);
 
@@ -31,7 +32,7 @@ bool game_setup(engine* e) {
 		.matrix = mat4_identity(),
 		.cbUpdate = object_update,
 		.cbCollision = object_collide,
-		.position = {0.0f, 25.0f, 0.0f},
+		.position = {0.0f, 30.0f, 0.0f},
 		.velocity = {0.0f, 0.0f, 0.0f},
 		.acceleration = {0.0f, 0.0f, 0.0f},
 		.fixed = false,
@@ -40,23 +41,46 @@ bool game_setup(engine* e) {
 		.elasticity = 0.9f,
 		.scale = {1, 1, 1},
 		.rotation = {0, M_PI_2 / 3.0f, 0},
+		.color = FG_BLUE,
 	};
 	vector_append(&objects, &obj);
 
-	/*model = mesh_from_obj("ship.obj");
+	model = triangles_from_obj("ship.obj");
 	obj = (object){
-		.mesh = model,
+		.triangles = model,
+		.matrix = mat4_identity(),
 		.cbUpdate = object_update,
 		.cbCollision = object_collide,
-		.position = {5.0f, 50.0f, 5.0f},
+		.position = {0.0f, 70.0f, 0.0f},
 		.velocity = {0.0f, 0.0f, 0.0f},
-		.acceleration = {0.0f, -9.8f, 0.0f},
-		.fixed = true,
-		.boundingBox = box_for_mesh(&model),
-		.bBox = bbox_for_mesh(&model),
+		.acceleration = {0.0f, 0.0f, 0.0f},
+		.fixed = false,
+		.boundingBox = box_for_triangles(&model),
+		.bBox = bbox_for_triangles(&model),
 		.elasticity = 0.9f,
 		.scale = {1, 1, 1},
-		.rotation = {0, 0, 0},
+		.rotation = {0, M_PI + M_PI_2 / 3.0f, 0},
+		.color = FG_GREEN,
+	};
+	
+	vector_append(&objects, &obj);
+	/*
+	model = triangles_from_obj("ship.obj");
+	obj = (object){
+		.triangles = model,
+		.matrix = mat4_identity(),
+		.cbUpdate = object_update,
+		.cbCollision = object_collide,
+		.position = {0.0f, 40.0f, 15.0f},
+		.velocity = {0.0f, 0.0f, 0.0f},
+		.acceleration = {0.0f, 0.0f, 0.0f},
+		.fixed = false,
+		.boundingBox = box_for_triangles(&model),
+		.bBox = bbox_for_triangles(&model),
+		.elasticity = 0.9f,
+		.scale = {1, 1, 1},
+		.rotation = {0, M_PI_2 + M_PI_2 / 3.0f, 0},
+		.color = FG_CYAN,
 	};
 	vector_append(&objects, &obj);*/
 
@@ -76,10 +100,29 @@ bool game_setup(engine* e) {
 	projectionMatrix = mat4_projection(vFov, aspect, Z_NEAR, Z_FAR);
 
 	cameraYaw = 3 * M_PI_2;
-	cameraPos = (vec3){ 5.0f, 15.0f, 15.0f };
+	cameraPos = (vec3){ 5.0f, 25.0f, 25.0f };
 	update_camera();
 	shouldUpdateView = true;
 	return true;
+}
+
+CHAR_INFO color_for(float l, WORD c) {
+	WORD sym = 0;
+	WORD clr = 0;
+	int br = max(0, min(5, (int)(l * 6.0f)));
+	switch (br) {
+	case 0:	sym = PX_THREEQUARTERS; clr = c << 4; break;
+	case 1: sym = PX_HALF; clr = c << 4; break;
+	case 2: sym = PX_QUARTER; clr = c; break;
+	case 3: sym = PX_HALF; clr = c; break;
+	case 4: sym = PX_THREEQUARTERS; clr = c; break;
+	case 5: sym = PX_SOLID; clr = c; break;
+	default: break;
+	}
+	CHAR_INFO r = { 0 };
+	r.Attributes = clr;
+	r.Char.UnicodeChar = sym;
+	return r;
 }
 
 bool game_update(engine* e, float dt) {
@@ -87,7 +130,7 @@ bool game_update(engine* e, float dt) {
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
-		o->acceleration = (vec3){ 0.0f, -20.0f, 0.0f };
+		o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
 	}
 
 	process_movement(e, dt);
@@ -100,7 +143,6 @@ bool game_update(engine* e, float dt) {
 	}
 
 	render_objects(e);
-
 	return !key_state(VK_ESCAPE);
 }
 
@@ -176,8 +218,8 @@ void process_movement(engine* e, float dt) {
 	if (mouse_state(MBTN_LEFT)) {
 		int dx = (int)(mousePos.x - mousePosOld.x);
 		int dy = (int)(mousePos.y - mousePosOld.y);
-		cameraYaw += dx * ROT_SPEED * dt / (float)e->console->chr_width;
-		cameraPitch -= dy * ROT_SPEED * dt / (float)e->console->chr_height;
+		cameraYaw += dx * ROT_SPEED * dt;
+		cameraPitch -= dy * ROT_SPEED * dt;
 		if (cameraPitch >= M_PI_2) cameraPitch = M_PI_2 - 0.1f;
 		if (cameraPitch <= -M_PI_2) cameraPitch = -M_PI_2 + 0.1f;
 		update_camera();
@@ -214,13 +256,14 @@ void render_objects(engine* e) {
 			if (vec3_dot(normal, cameraRay) < 0.0f) {
 				vec3 lightDir = vec3_normalize((vec3) { 0.0f, 1.0f, 1.0f });
 				float dp = vec3_dot(normal, lightDir);
-				CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
+				//CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
+				CHAR_INFO c = color_for(min(max(0.1f, dp), 0.99f), obj->color);
 
 				triangle viewTri = triangle_multiply_matrix(modelTri, &viewMatrix, true);
 				viewTri.color = c.Attributes;
 				viewTri.symbol = c.Char.UnicodeChar;
 
-				triangle clipped[2];
+				triangle clipped[2] = { 0 };
 				linked_list clipQueue = { 0 };
 				list_push_back(&clipQueue, sizeof(triangle), &viewTri);
 				size_t clipCount = 1;
@@ -407,7 +450,7 @@ CHAR_INFO grey_pixel(float l) {
 	case 11: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PX_THREEQUARTERS; break;
 	case 12: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PX_SOLID; break;
 	}
-	CHAR_INFO c;
+	CHAR_INFO c = { 0 };
 	c.Attributes = bg_col | fg_col;
 	c.Char.UnicodeChar = sym;
 	return c;
