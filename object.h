@@ -1,7 +1,19 @@
 #pragma once
 
-#include "mesh.h"
-#include "engine.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include "vmath2.h"
+#include "vector.h"
+#include "constants.h"
+
+typedef struct engine engine;
+
+typedef struct {
+	vec4u data[3];
+	wchar_t symbol;
+	unsigned short color;
+} triangle;
 
 typedef struct {
 	float x0, y0, z0;
@@ -20,7 +32,8 @@ typedef struct {
 } bbox;
 
 typedef struct object {
-	mesh mesh;
+	mat4 matrix;
+	vector triangles;
 	vec3 position;
 	vec3 velocity;
 	vec3 acceleration;
@@ -30,19 +43,23 @@ typedef struct object {
 	float elasticity;
 	vec3 scale;
 	vec3 rotation;
+
 	void (*cbSetup)(struct object*, engine*);
 	void (*cbUpdate)(struct object*, engine*, float);
 	void (*cbTeardown)(struct object*, engine*);
 	void (*cbCollision)(struct object*, struct object*, engine*, float, float, float);
 } object;
-
+int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2);
+int triangle_compare(const void* a, const void* b);
+triangle triangle_multiply_matrix(triangle t, mat4* m, bool scale);
 void object_update_matrix(object* o);
 void object_update(object* o, engine* e, float dt);
 void object_collide(object* o1, object* o2, engine* e, float dx, float dy, float dz);
-box box_for_mesh(mesh* m);
+box box_for_triangles(vector* v);
 bool objects_colliding(object* o1, object* o2);
 vec4 object_collision_distance(object* o1, object* o2);
 float absmin(float a, float b);
 bool less(float a, float b);
-bbox bbox_for_mesh(mesh* m);
+bbox bbox_for_triangles(vector* v);
 bbox true_bbox(object* o);
+vector triangles_from_obj(const char* path);

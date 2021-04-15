@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include "engine.h"
 #include "vmath2.h"
-#include "mesh.h"
 #include "vector.h"
 #include "linked_list.h"
 #include "object.h"

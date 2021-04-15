@@ -192,8 +192,8 @@ mat4 mat4_rotation_x(float f) {
 mat4 mat4_rotation_y(float f) {
 	mat4 m = { 0 };
 	m.data[0][0] = cosf(f);
-	m.data[0][2] = sinf(f);
-	m.data[2][0] = -sinf(f);
+	m.data[0][2] = -sinf(f);
+	m.data[2][0] = sinf(f);
 	m.data[1][1] = 1.0f;
 	m.data[2][2] = cosf(f);
 	m.data[3][3] = 1.0f;

@@ -7,14 +7,15 @@ float horizontal_to_vertical_fov(float hFov, float aspect) {
 bool game_setup(engine* e) {
 	objects = vector_create(sizeof(object));
 
-	mesh model = mesh_from_obj("axis4.obj");
+	vector model = triangles_from_obj("axis4.obj");
 	object obj = {
-		.mesh = model,
+		.triangles = model,
+		.matrix = mat4_identity(),
 		.cbUpdate = object_update,
 		.cbCollision = object_collide,
 		.fixed = true,
-		.boundingBox = box_for_mesh(&model),
-		.bBox = bbox_for_mesh(&model),
+		.boundingBox = box_for_triangles(&model),
+		.bBox = bbox_for_triangles(&model),
 		.elasticity = 0.0f,
 		.position = {0.0f, 0.0f, 0.0f},
 		.velocity = {0.0f, 0.0f, 0.0f},
@@ -24,17 +25,18 @@ bool game_setup(engine* e) {
 	};	
 	vector_append(&objects, &obj);
 
-	model = mesh_from_obj("ship.obj");
+	model = triangles_from_obj("ship.obj");
 	obj = (object){
-		.mesh = model,
+		.triangles = model,
+		.matrix = mat4_identity(),
 		.cbUpdate = object_update,
 		.cbCollision = object_collide,
-		.position = {5.0f, 25.0f, 5.0f},
+		.position = {0.0f, 25.0f, 0.0f},
 		.velocity = {0.0f, 0.0f, 0.0f},
-		.acceleration = {0.0f, -9.8f, 0.0f},
+		.acceleration = {0.0f, 0.0f, 0.0f},
 		.fixed = false,
-		.boundingBox = box_for_mesh(&model),
-		.bBox = bbox_for_mesh(&model),
+		.boundingBox = box_for_triangles(&model),
+		.bBox = bbox_for_triangles(&model),
 		.elasticity = 0.9f,
 		.scale = {1, 1, 1},
 		.rotation = {0, M_PI_2 / 3.0f, 0},
@@ -85,7 +87,7 @@ bool game_update(engine* e, float dt) {
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
-		o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
+		o->acceleration = (vec3){ 0.0f, -20.0f, 0.0f };
 	}
 
 	process_movement(e, dt);
@@ -200,9 +202,10 @@ void process_movement(engine* e, float dt) {
 void render_objects(engine* e) {
 	vector rasterQueue = vector_create(sizeof(triangle));
 	for (size_t o = 0; o < objects.length; o++) {
-		mesh* currentMesh = &((object*)vector_get(&objects, o))->mesh;
-		for (size_t i = 0; i < currentMesh->triangles.length; i++) {
-			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&currentMesh->triangles, i), &currentMesh->matrix, true);
+		//mesh* currentMesh = &((object*)vector_get(&objects, o))->mesh;
+		object* obj = (object*)vector_get(&objects, o);
+		for (size_t i = 0; i < obj->triangles.length; i++) {
+			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&obj->triangles, i), &obj->matrix, true);
 			vec3 line1 = vec3_sub(modelTri.data[1].v3, modelTri.data[0].v3);
 			vec3 line2 = vec3_sub(modelTri.data[2].v3, modelTri.data[0].v3);
 			vec3 normal = vec3_cross(line1, line2);
@@ -317,7 +320,7 @@ void render_objects(engine* e) {
 
 void game_teardown(engine* e) {
 	for (size_t i = 0; i < objects.length; i++)
-		vector_destroy(&((object*)vector_get(&objects, i))->mesh.triangles);
+		vector_destroy(&((object*)vector_get(&objects, i))->triangles);
 	vector_destroy(&objects);
 }
 
