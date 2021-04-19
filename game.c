@@ -10,20 +10,24 @@ bool game_setup(engine* e) {
 	object obj = object_create_from_obj("axis4.obj");
 	obj.fixed = true;
 	obj.color = FG_RED;
+	obj.rotation = (vec3){ 0, 0, 0 };
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
-	obj.position.y = 30.0f;
+	obj.position = (vec3){ -20, 30, -20};
+	obj.velocity = (vec3){ 10, 0, 15 };
 	obj.color = FG_BLUE;
-	obj.elasticity = 0.8f;
+
+	obj.elasticity = 0.9f;
 	obj.mass = 1.0f;
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
-	obj.position.y = 50.0f;
+	obj.position = (vec3) { 20, 30, 20 };
 	obj.color = FG_GREEN;
-	obj.elasticity = 0.8f;
-	obj.mass = 2.0f;
+	obj.elasticity = 0.9f;
+	obj.velocity = (vec3){ -10, 0, -10 };
+	obj.mass = 1.0f;
 	vector_append(&objects, &obj);
 
 	for (size_t i = 0; i < objects.length; i++) {
@@ -47,13 +51,13 @@ bool game_setup(engine* e) {
 	projectionMatrix = mat4_projection(vFov, aspect, Z_NEAR, Z_FAR);
 
 	cameraYaw = 3 * M_PI_2;
-	cameraPos = (vec3){ 5.0f, 25.0f, 25.0f };
+	cameraPitch = -M_PI_4;
+	cameraPos = (vec3){ 5.0f, 35.0f, 25.0f };
 	update_camera();
 	shouldUpdateView = true;
 
 	e->drawMode = DM_SOLID;
 	e->cullMode = FC_BACK;
-
 
 	return true;
 }
@@ -83,6 +87,7 @@ bool game_update(engine* e, float dt) {
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
 		o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
+		o->updated = false;
 	}
 
 	process_movement(e, dt);
@@ -94,25 +99,41 @@ bool game_update(engine* e, float dt) {
 
 	process_collisions(e, dt);
 
-	for (size_t i = 0; i < objects.length; i++) {
-		object* o = (object*)vector_get(&objects, i);
-		object_update_matrix(o);
-	}
-
 	render_objects(e);
 	return !key_state(VK_ESCAPE);
 }
 
 void process_collisions(engine* e, float dt) {
 	for (size_t i = 0; i < objects.length; i++) {
-		for (size_t j = 0; j < objects.length; j++) {
-			if (i == j) continue;
+		for (size_t j = i + 1; j < objects.length; j++) {
 			object* o1 = (object*)vector_get(&objects, i);
 			object* o2 = (object*)vector_get(&objects, j);
-			if (!o1->fixed) {
-				vec3 col = { 0 };
-				if (o1->cbCollision && objects_colliding_sat(o1, o2, &col))
-					o1->cbCollision(o1, o2, e, col);
+			if (o1->fixed && o2->fixed) continue; // no physics needed
+			vec3 col = { 0 };
+			if (objects_colliding_sat(o1, o2, &col)) {
+				if (o1->fixed || o2->fixed) {
+					if (o1->fixed) { object* t = o1; o1 = o2; o2 = t; }
+					// o1 == moving
+					// o2 == fixed
+					o1->position = o1->prevPosition;
+					vec3 n = vec3_normalize(col);
+					vec3 v = vec3_project(o1->velocity, n);
+					o1->velocity = vec3_sub(o1->velocity, vec3_mul_scalar(v, 1.0f + o1->elasticity));
+					object_update_matrix(o1);
+				} else {
+					// both moving
+					o1->position = o1->prevPosition;
+					o2->position = o2->prevPosition;
+					vec3 n = vec3_normalize(col);
+					float vd = vec3_dot(vec3_sub(o2->velocity, o1->velocity), n);
+					float jn = (o1->mass * o2->mass) / (o1->mass + o2->mass) * (1.8f) * vd;
+					vec3 dv1 = vec3_mul_scalar(n, jn / o1->mass);
+					vec3 dv2 = vec3_mul_scalar(n, -jn / o2->mass);
+					o1->velocity = vec3_add(o1->velocity, dv1);
+					o2->velocity = vec3_add(o2->velocity, dv2);
+					object_update_matrix(o1);
+					object_update_matrix(o2);
+				}
 			}
 		}
 	}

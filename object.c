@@ -7,7 +7,6 @@ object object_create_from_obj(const char* path) {
 		.cbSetup = object_setup,
 		.cbUpdate = object_update,
 		.cbTeardown = object_teardown,
-		.cbCollision = object_collide,
 
 		.triangles = t,
 		.matrix = mat4_identity(),
@@ -26,6 +25,7 @@ object object_create_from_obj(const char* path) {
 }
 
 void object_update(object* o, engine* e, float dt) {
+	o->prevPosition = o->position;
 	if (!o->fixed) {
 		o->velocity = vec3_add(o->velocity, vec3_mul_scalar(o->acceleration, dt));
 		o->position = vec3_add(o->position, vec3_mul_scalar(o->velocity, dt));
@@ -39,52 +39,16 @@ void object_update(object* o, engine* e, float dt) {
 
 void object_update_matrix(object* o) {
 	o->matrix = mat4_scale(o->scale);
-	o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation(o->rotation));
+	//o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation(o->rotation));
+	o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation_z(o->rotation.z));
+	o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation_y(o->rotation.y));
+	o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation_x(o->rotation.x));
 	o->matrix = mat4_mul_mat4(&o->matrix, mat4_translation(o->position));
-}
-
-void object_collide(object* o1, object* o2, engine* e, vec3 col) {
-
-	if (o2->fixed) {
-		o1->position = vec3_add(o1->position, col);
-		// update matrix so only 1 intersection calculated
-		o1->matrix.data[3][0] = o1->position.x;
-		o1->matrix.data[3][1] = o1->position.y;
-		o1->matrix.data[3][2] = o1->position.z;
-
-		vec3 n = vec3_normalize(col);
-		vec3 v = vec3_project(o1->velocity, n);
-		o1->velocity = vec3_sub(o1->velocity, vec3_mul_scalar(v, 1.0f + o1->elasticity));
-		vec3 u = vec3_project(o1->acceleration, n);
-		o1->acceleration = vec3_sub(o1->acceleration, u);
-	} else {
-		o1->position = vec3_add(o1->position, vec3_div_scalar(col, -2));
-		o1->matrix.data[3][0] = o1->position.x;
-		o1->matrix.data[3][1] = o1->position.y;
-		o1->matrix.data[3][2] = o1->position.z;
-
-		o2->position = vec3_add(o2->position, vec3_div_scalar(col, 2));
-		o2->matrix.data[3][0] = o2->position.x;
-		o2->matrix.data[3][1] = o2->position.y;
-		o2->matrix.data[3][2] = o2->position.z;
-
-		float m1 = (2 * o2->mass) / (o1->mass + o2->mass);
-		vec3 p12 = vec3_sub(o1->position, o2->position);
-		float c1 = vec3_dot(vec3_sub(o1->velocity, o2->velocity), p12) / powf(vec3_length(p12), 2.0f);
-		vec3 v1 = vec3_sub(o1->velocity, vec3_mul_scalar(p12, m1 * c1));
-
-		float m2 = (2 * o1->mass) / (o1->mass + o2->mass);
-		vec3 p21 = vec3_sub(o2->position, o1->position);
-		float c2 = vec3_dot(vec3_sub(o2->velocity, o1->velocity), p21) / powf(vec3_length(p21), 2.0f);
-		vec3 v2 = vec3_sub(o2->velocity, vec3_mul_scalar(p21, m2 * c2));
-
-		o1->velocity = vec3_mul_scalar(v1, o1->elasticity);
-		o2->velocity = vec3_mul_scalar(v2, o2->elasticity);
-	}
 }
 
 void object_setup(object* o, engine* e) {
 	object_update_matrix(o);
+	o->prevPosition = o->position;
 }
 
 void object_teardown(object* o, engine* e) {
