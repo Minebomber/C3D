@@ -16,14 +16,14 @@ bool game_setup(engine* e) {
 	obj.position.y = 30.0f;
 	obj.color = FG_BLUE;
 	obj.elasticity = 0.8f;
-	obj.mass = 2.0f;
+	obj.mass = 1.0f;
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
 	obj.position.y = 50.0f;
 	obj.color = FG_GREEN;
 	obj.elasticity = 0.8f;
-	obj.mass = 1.0f;
+	obj.mass = 2.0f;
 	vector_append(&objects, &obj);
 
 	for (size_t i = 0; i < objects.length; i++) {
