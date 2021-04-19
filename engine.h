@@ -5,6 +5,10 @@
 typedef struct engine {
 	console* console;
 	
+	int drawMode;
+	int cullMode;
+	int wireColor;
+
 	bool (*cbSetup)(struct engine*);
 	bool (*cbUpdate)(struct engine*, float);
 	void (*cbTeardown)(struct engine*);

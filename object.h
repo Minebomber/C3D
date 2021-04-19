@@ -41,7 +41,7 @@ typedef struct object {
 	vec3 velocity;
 	vec3 acceleration;
 	bool fixed;
-	bbox bBox;
+	bbox boundingBox;
 	float elasticity;
 	vec3 scale;
 	vec3 rotation;
@@ -57,9 +57,12 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 int triangle_compare(const void* a, const void* b);
 triangle triangle_multiply_matrix(triangle t, mat4* m, bool scale);
 
+object object_create_from_obj(const char* path);
 void object_update_matrix(object* o);
 void object_update(object* o, engine* e, float dt);
 void object_collide(object* o1, object* o2, engine* e, vec3 col);
+void object_setup(object* o, engine* e);
+void object_teardown(object* o, engine* e);
 
 float absmin(float a, float b);
 bool less(float a, float b);

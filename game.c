@@ -7,85 +7,27 @@ float horizontal_to_vertical_fov(float hFov, float aspect) {
 bool game_setup(engine* e) {
 	objects = vector_create(sizeof(object));
 
-	vector model = triangles_from_obj("axis4.obj");
-	object obj = {
-		.triangles = model,
-		.matrix = mat4_identity(),
-		.cbUpdate = object_update,
-		.cbCollision = object_collide,
-		.fixed = true,
-		//.boundingBox = box_for_triangles(&model),
-		.bBox = bbox_for_triangles(&model),
-		.elasticity = 0.0f,
-		.position = {0.0f, 0.0f, 0.0f},
-		.velocity = {0.0f, 0.0f, 0.0f},
-		.acceleration = {0.0f, 0.0f, 0.0f},
-		.scale = {1, 1, 1},
-		.rotation = {0, 0, 0},
-		.color = FG_RED,
-	};	
-	obj.prevPosition = obj.position;
+	object obj = object_create_from_obj("axis4.obj");
+	obj.fixed = true;
+	obj.color = FG_RED;
+	obj.elasticity = 0.8f;
 	vector_append(&objects, &obj);
 
-	model = triangles_from_obj("ship.obj");
-	obj = (object){
-		.triangles = model,
-		.matrix = mat4_identity(),
-		.cbUpdate = object_update,
-		.cbCollision = object_collide,
-		.position = {0.0f, 30.0f, 0.0f},
-		.velocity = {0.0f, 0.0f, 0.0f},
-		.acceleration = {0.0f, 0.0f, 0.0f},
-		.fixed = false,
-		.bBox = bbox_for_triangles(&model),
-		.elasticity = 0.8f,
-		.scale = {1, 1, 1},
-		.rotation = {0, 0, 0},
-		.color = FG_CYAN,
-	};
-	obj.prevPosition = obj.position;
+	obj = object_create_from_obj("ship.obj");
+	obj.position.y = 30.0f;
+	obj.color = FG_BLUE;
+	obj.elasticity = 0.8f;
 	vector_append(&objects, &obj);
 
-	model = triangles_from_obj("ship.obj");
-	obj = (object){
-		.triangles = model,
-		.matrix = mat4_identity(),
-		.cbUpdate = object_update,
-		.cbCollision = object_collide,
-		.position = {0.0f, 50.0f, 0.0f},
-		.velocity = {0.0f, 0.0f, 0.0f},
-		.acceleration = {0.0f, 0.0f, 0.0f},
-		.fixed = false,
-		.bBox = bbox_for_triangles(&model),
-		.elasticity = 0.8f,
-		.scale = {1, 1, 1},
-		.rotation = {M_PI_4, M_PI_4, 0},
-		.color = FG_GREEN,
-	};
-	obj.prevPosition = obj.position;
+	obj = object_create_from_obj("ship.obj");
+	obj.position.y = 50.0f;
+	obj.color = FG_GREEN;
+	obj.elasticity = 0.8f;
 	vector_append(&objects, &obj);
-	/*
-	model = triangles_from_obj("ship.obj");
-	obj = (object){
-		.triangles = model,
-		.matrix = mat4_identity(),
-		.cbUpdate = object_update,
-		.cbCollision = object_collide,
-		.position = {0.0f, 40.0f, 15.0f},
-		.velocity = {0.0f, 0.0f, 0.0f},
-		.acceleration = {0.0f, 0.0f, 0.0f},
-		.fixed = false,
-		.boundingBox = box_for_triangles(&model),
-		.bBox = bbox_for_triangles(&model),
-		.elasticity = 0.9f,
-		.scale = {1, 1, 1},
-		.rotation = {0, M_PI_2 + M_PI_2 / 3.0f, 0},
-		.color = FG_CYAN,
-	};
-	vector_append(&objects, &obj);*/
 
 	for (size_t i = 0; i < objects.length; i++) {
-		object_update_matrix((object*)vector_get(&objects, i));
+		object* o = (object*)vector_get(&objects, i);
+		if (o->cbSetup) o->cbSetup(o, e);
 	}
 
 	float aspect = ((float)e->console->height * (float)e->console->chr_height) / ((float)e->console->width * (float)e->console->chr_width);
@@ -107,6 +49,11 @@ bool game_setup(engine* e) {
 	cameraPos = (vec3){ 5.0f, 25.0f, 25.0f };
 	update_camera();
 	shouldUpdateView = true;
+
+	e->drawMode = DM_SOLID;
+	e->cullMode = FC_BACK;
+
+
 	return true;
 }
 
@@ -246,7 +193,6 @@ void process_movement(engine* e, float dt) {
 void render_objects(engine* e) {
 	vector rasterQueue = vector_create(sizeof(triangle));
 	for (size_t o = 0; o < objects.length; o++) {
-		//mesh* currentMesh = &((object*)vector_get(&objects, o))->mesh;
 		object* obj = (object*)vector_get(&objects, o);
 		for (size_t i = 0; i < obj->triangles.length; i++) {
 			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&obj->triangles, i), &obj->matrix, true);
@@ -255,7 +201,7 @@ void render_objects(engine* e) {
 			vec3 normal = vec3_cross(line1, line2);
 			normal = vec3_normalize(normal);
 			vec3 cameraRay = vec3_sub(modelTri.data[0].v3, cameraPos);
-			if (vec3_dot(normal, cameraRay)/* < 0.0f*/) {
+			if ((vec3_dot(normal, cameraRay) < 0.0f) == (e->cullMode == FC_BACK)) {
 				vec3 lightDir = vec3_normalize((vec3) { 0.0f, 1.0f, 1.0f });
 				float dp = vec3_dot(normal, lightDir);
 				//CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
@@ -343,21 +289,23 @@ void render_objects(engine* e) {
 
 	for (size_t i = 0; i < rasterQueue.length; i++) {
 		triangle* t = vector_get(&rasterQueue, i);
-		/*console_fill_triangle(
-			e->console,
-			(int)(t->data[0].x), (int)(t->data[0].y),
-			(int)(t->data[1].x), (int)(t->data[1].y),
-			(int)(t->data[2].x), (int)(t->data[2].y),
-			t->symbol, t->color
-		);*/
-
-		console_triangle(
-			e->console,
-			(int)(t->data[0].x), (int)(t->data[0].y),
-			(int)(t->data[1].x), (int)(t->data[1].y),
-			(int)(t->data[2].x), (int)(t->data[2].y),
-			t->symbol, t->color
-		);
+		if (e->drawMode & DM_SOLID)
+			console_fill_triangle(
+				e->console,
+				(int)(t->data[0].x), (int)(t->data[0].y),
+				(int)(t->data[1].x), (int)(t->data[1].y),
+				(int)(t->data[2].x), (int)(t->data[2].y),
+				t->symbol, t->color
+			);
+		if (e->drawMode & DM_WIREFRAME)
+			console_triangle(
+				e->console,
+				(int)(t->data[0].x), (int)(t->data[0].y),
+				(int)(t->data[1].x), (int)(t->data[1].y),
+				(int)(t->data[2].x), (int)(t->data[2].y),
+				e->wireColor ? PX_SOLID : t->symbol,
+				e->wireColor ? e->wireColor : t->color
+			);
 	}
 
 	vector_destroy(&rasterQueue);
