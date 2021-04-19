@@ -10,19 +10,20 @@ bool game_setup(engine* e) {
 	object obj = object_create_from_obj("axis4.obj");
 	obj.fixed = true;
 	obj.color = FG_RED;
-	obj.elasticity = 0.8f;
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
 	obj.position.y = 30.0f;
 	obj.color = FG_BLUE;
 	obj.elasticity = 0.8f;
+	obj.mass = 2.0f;
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
 	obj.position.y = 50.0f;
 	obj.color = FG_GREEN;
 	obj.elasticity = 0.8f;
+	obj.mass = 1.0f;
 	vector_append(&objects, &obj);
 
 	for (size_t i = 0; i < objects.length; i++) {
@@ -83,13 +84,19 @@ bool game_update(engine* e, float dt) {
 		object* o = (object*)vector_get(&objects, i);
 		o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
 	}
+
 	process_movement(e, dt);
+
+	for (size_t i = 0; i < objects.length; i++) {
+		object* o = (object*)vector_get(&objects, i);
+		if (o->cbUpdate) o->cbUpdate(o, e, dt);
+	}
 
 	process_collisions(e, dt);
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
-		if (o->cbUpdate) o->cbUpdate(o, e, dt);
+		object_update_matrix(o);
 	}
 
 	render_objects(e);

@@ -47,6 +47,7 @@ typedef struct object {
 	vec3 rotation;
 	unsigned short color;
 	vec3 prevPosition;
+	float mass;
 	void (*cbSetup)(struct object*, engine*);
 	void (*cbUpdate)(struct object*, engine*, float);
 	void (*cbTeardown)(struct object*, engine*);

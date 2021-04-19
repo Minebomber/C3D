@@ -47,13 +47,36 @@ void object_update_matrix(object* o) {
 }
 
 void object_collide(object* o1, object* o2, engine* e, vec3 col) {
+
 	o1->position = o1->prevPosition;
-	vec3 n = vec3_normalize(col);
-	vec3 v = vec3_project(o1->velocity, n);
-	o1->velocity = vec3_sub(o1->velocity, vec3_mul_scalar(v, 1.0f + o1->elasticity));
+	// update matrix so only 1 intersection calculated
+	o1->matrix.data[3][0] = o1->position.x;
+	o1->matrix.data[3][1] = o1->position.y;
+	o1->matrix.data[3][2] = o1->position.z;
 	if (o2->fixed) {
+		vec3 n = vec3_normalize(col);
+		vec3 v = vec3_project(o1->velocity, n);
+		o1->velocity = vec3_sub(o1->velocity, vec3_mul_scalar(v, 1.0f + o1->elasticity));
 		vec3 u = vec3_project(o1->acceleration, n);
 		o1->acceleration = vec3_sub(o1->acceleration, u);
+	} else {
+		o2->position = o2->prevPosition;
+		// update matrix so only 1 intersection calculated
+		o2->matrix.data[3][0] = o2->position.x;
+		o2->matrix.data[3][1] = o2->position.y;
+		o2->matrix.data[3][2] = o2->position.z;
+		float m1 = (2 * o2->mass) / (o1->mass + o2->mass);
+		vec3 p12 = vec3_sub(o1->position, o2->position);
+		float c1 = vec3_dot(vec3_sub(o1->velocity, o2->velocity), p12) / powf(vec3_length(p12), 2.0f);
+		vec3 v1 = vec3_sub(o1->velocity, vec3_mul_scalar(p12, m1 * c1));
+
+		float m2 = (2 * o1->mass) / (o1->mass + o2->mass);
+		vec3 p21 = vec3_sub(o2->position, o1->position);
+		float c2 = vec3_dot(vec3_sub(o2->velocity, o1->velocity), p21) / powf(vec3_length(p21), 2.0f);
+		vec3 v2 = vec3_sub(o2->velocity, vec3_mul_scalar(p21, m2 * c2));
+
+		o1->velocity = vec3_mul_scalar(v1, o1->elasticity);
+		o2->velocity = vec3_mul_scalar(v2, o2->elasticity);
 	}
 }
 
