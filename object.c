@@ -7,48 +7,46 @@ object object_create_from_obj(const char* path) {
 		.cbSetup = object_setup,
 		.cbUpdate = object_update,
 		.cbTeardown = object_teardown,
-
-		.triangles = t,
-		.matrix = mat4_identity(),
-		.boundingBox = bbox_for_triangles(&t),
-
-		.position = {0, 0, 0},
-		.velocity = {0, 0, 0},
-		.acceleration = {0, 0, 0},
-
-		.scale = {1.0f, 1.0f, 1.0f},
-		.rotation = {0.0f, 0.0f, 0.0f},
-
-		.color = FG_WHITE,
+		.mesh = {
+			.triangles = t,
+			.matrix = mat4_identity(),
+			.boundingBox = bbox_for_triangles(&t),
+			.color = FG_WHITE,
+		},
+		
+		.transform = {
+			.scale = {1.0f, 1.0f, 1.0f},
+		},
+		
 	};
 	return o;
 }
 
 void object_update(object* o, engine* e, float dt) {
-	o->prevPosition = o->position;
-	if (!o->fixed) {
-		o->velocity = vec3_add(o->velocity, vec3_mul_scalar(o->acceleration, dt));
-		o->position = vec3_add(o->position, vec3_mul_scalar(o->velocity, dt));
+	o->physics.prevPosition = o->transform.position;
+	if (!o->physics.fixed) {
+		o->physics.velocity = vec3_add(o->physics.velocity, vec3_mul_scalar(o->physics.acceleration, dt));
+		o->transform.position = vec3_add(o->transform.position, vec3_mul_scalar(o->physics.velocity, dt));
 
-		if (fabsf(o->position.x) > 100.0f) o->position.x *= -1.0f;
-		if (fabsf(o->position.y) > 100.0f) o->position.y *= -1.0f;
-		if (fabsf(o->position.z) > 100.0f) o->position.z *= -1.0f;
+		if (fabsf(o->transform.position.x) > 100.0f) o->transform.position.x *= -1.0f;
+		if (fabsf(o->transform.position.y) > 100.0f) o->transform.position.y *= -1.0f;
+		if (fabsf(o->transform.position.z) > 100.0f) o->transform.position.z *= -1.0f;
 	}
 	object_update_matrix(o);
 }
 
 void object_update_matrix(object* o) {
-	o->matrix = mat4_scale(o->scale);
+	o->mesh.matrix = mat4_scale(o->transform.scale);
 	//o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation(o->rotation));
-	o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation_z(o->rotation.z));
-	o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation_y(o->rotation.y));
-	o->matrix = mat4_mul_mat4(&o->matrix, mat4_rotation_x(o->rotation.x));
-	o->matrix = mat4_mul_mat4(&o->matrix, mat4_translation(o->position));
+	o->mesh.matrix = mat4_mul_mat4(&o->mesh.matrix, mat4_rotation_z(o->transform.rotation.z));
+	o->mesh.matrix = mat4_mul_mat4(&o->mesh.matrix, mat4_rotation_y(o->transform.rotation.y));
+	o->mesh.matrix = mat4_mul_mat4(&o->mesh.matrix, mat4_rotation_x(o->transform.rotation.x));
+	o->mesh.matrix = mat4_mul_mat4(&o->mesh.matrix, mat4_translation(o->transform.position));
 }
 
 void object_setup(object* o, engine* e) {
 	object_update_matrix(o);
-	o->prevPosition = o->position;
+	o->physics.prevPosition = o->transform.position;
 }
 
 void object_teardown(object* o, engine* e) {
@@ -264,18 +262,18 @@ bbox bbox_for_triangles(vector* v) {
 bbox true_bbox(object* o) {
 	return (bbox) {
 		.data = {
-			(vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.data[0].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.data[1].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.data[2].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.data[3].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.data[4].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.data[5].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.data[6].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.data[7].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[0].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[1].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[2].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[3].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[4].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[5].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[6].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[7].v4) },
 		},
-		.xAxis = (vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.xAxis.v4) },
-		.yAxis = (vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.yAxis.v4) },
-		.zAxis = (vec4u) { .v4 = mat4_mul_vec4(&o->matrix, o->boundingBox.zAxis.v4) },
+		.xAxis = (vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.xAxis.v4) },
+		.yAxis = (vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.yAxis.v4) },
+		.zAxis = (vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.zAxis.v4) },
 	};
 }
 

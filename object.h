@@ -35,20 +35,25 @@ typedef struct {
 } bbox;
 
 typedef struct object {
-	mat4 matrix;
-	vector triangles;
-	vec3 position;
-	vec3 velocity;
-	vec3 acceleration;
-	bool fixed;
-	bbox boundingBox;
-	float elasticity;
-	vec3 scale;
-	vec3 rotation;
-	unsigned short color;
-	float mass;
-	bool updated;
-	vec3 prevPosition;
+	struct {
+		vector triangles;
+		mat4 matrix;
+		bbox boundingBox;
+		unsigned short color;
+	} mesh;
+	struct {
+		vec3 position;
+		vec3 rotation;
+		vec3 scale;
+	} transform;
+	struct {
+		vec3 velocity;
+		vec3 acceleration;
+		bool fixed;
+		float elasticity;
+		float mass;
+		vec3 prevPosition;
+	} physics;
 	void (*cbSetup)(struct object*, engine*);
 	void (*cbUpdate)(struct object*, engine*, float);
 	void (*cbTeardown)(struct object*, engine*);

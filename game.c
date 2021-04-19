@@ -8,27 +8,27 @@ bool game_setup(engine* e) {
 	objects = vector_create(sizeof(object));
 
 	object obj = object_create_from_obj("axis4.obj");
-	obj.fixed = true;
-	obj.color = FG_RED;
-	obj.rotation = (vec3){ 0, 0, 0 };
+	obj.physics.fixed = true;
+	obj.mesh.color = FG_RED;
+	obj.transform.rotation = (vec3){ 0, 0, 0 };
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
-	obj.position = (vec3){ 0, 60, 0};
-	obj.velocity = (vec3){ 0, -10, 0 };
-	obj.color = FG_BLUE;
-	obj.scale = (vec3){ 5, 5, 5 };
-	obj.elasticity = 1.0f;
-	obj.mass = 500.0f;
+	obj.transform.position = (vec3){ 0, 60, 0};
+	obj.physics.velocity = (vec3){ 0, -10, 0 };
+	obj.mesh.color = FG_BLUE;
+	obj.transform.scale = (vec3){ 5, 5, 5 };
+	obj.physics.elasticity = 1.0f;
+	obj.physics.mass = 500.0f;
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
-	obj.position = (vec3) { 0, 30, 0 };
-	obj.color = FG_GREEN;
-	obj.elasticity = 1.0f;
-	obj.velocity = (vec3){ 0, 10, 0 };
-	obj.scale = (vec3){ 0.5f, 0.5f, 0.5f };
-	obj.mass = 1.0f;
+	obj.transform.position = (vec3) { 0, 30, 0 };
+	obj.mesh.color = FG_GREEN;
+	obj.physics.elasticity = 1.0f;
+	obj.physics.velocity = (vec3){ 0, 10, 0 };
+	obj.transform.scale = (vec3){ 0.5f, 0.5f, 0.5f };
+	obj.physics.mass = 1.0f;
 	vector_append(&objects, &obj);
 
 	for (size_t i = 0; i < objects.length; i++) {
@@ -86,8 +86,7 @@ bool game_update(engine* e, float dt) {
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
-		//o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
-		o->updated = false;
+		//o->physics.acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
 	}
 
 	process_movement(e, dt);
@@ -108,27 +107,27 @@ void process_collisions(engine* e, float dt) {
 		for (size_t j = i + 1; j < objects.length; j++) {
 			object* o1 = (object*)vector_get(&objects, i);
 			object* o2 = (object*)vector_get(&objects, j);
-			if (o1->fixed && o2->fixed) continue; // no physics needed
+			if (o1->physics.fixed && o2->physics.fixed) continue; // no physics needed
 			vec3 col = { 0 };
 			if (objects_colliding_sat(o1, o2, &col)) {
-				if (o1->fixed || o2->fixed) {
-					if (o1->fixed) { object* t = o1; o1 = o2; o2 = t; }
+				if (o1->physics.fixed || o2->physics.fixed) {
+					if (o1->physics.fixed) { object* t = o1; o1 = o2; o2 = t; }
 					// o1 == moving
 					// o2 == fixed
-					o1->position = o1->prevPosition;
+					o1->transform.position = o1->physics.prevPosition;
 					vec3 n = vec3_normalize(col);
-					vec3 v = vec3_project(o1->velocity, n);
-					o1->velocity = vec3_sub(o1->velocity, vec3_mul_scalar(v, 1.0f + o1->elasticity));
+					vec3 v = vec3_project(o1->physics.velocity, n);
+					o1->physics.velocity = vec3_sub(o1->physics.velocity, vec3_mul_scalar(v, 1.0f + o1->physics.elasticity));
 					object_update_matrix(o1);
 				} else {
 					// both moving
-					o1->position = o1->prevPosition;
-					o2->position = o2->prevPosition;
+					o1->transform.position = o1->physics.prevPosition;
+					o2->transform.position = o2->physics.prevPosition;
 					vec3 n = vec3_normalize(col);
-					float vd = vec3_dot(vec3_sub(o2->velocity, o1->velocity), n);
-					float jn = (o1->mass * o2->mass) / (o1->mass + o2->mass) * (1.0f + (o1->elasticity + o2->elasticity) / 2.0f) * vd;
-					o1->velocity = vec3_add(o1->velocity, vec3_mul_scalar(n, jn / o1->mass));
-					o2->velocity = vec3_add(o2->velocity, vec3_mul_scalar(n, -jn / o2->mass));
+					float vd = vec3_dot(vec3_sub(o2->physics.velocity, o1->physics.velocity), n);
+					float jn = (o1->physics.mass * o2->physics.mass) / (o1->physics.mass + o2->physics.mass) * (1.0f + (o1->physics.elasticity + o2->physics.elasticity) / 2.0f) * vd;
+					o1->physics.velocity = vec3_add(o1->physics.velocity, vec3_mul_scalar(n, jn / o1->physics.mass));
+					o2->physics.velocity = vec3_add(o2->physics.velocity, vec3_mul_scalar(n, -jn / o2->physics.mass));
 					object_update_matrix(o1);
 					object_update_matrix(o2);
 				}
@@ -208,20 +207,20 @@ void process_movement(engine* e, float dt) {
 	}
 
 	object* ship = vector_get(&objects, 1);
-	if (key_state('I'))	ship->acceleration.z += 20.0f;
-	if (key_state('K'))	ship->acceleration.z -= 20.0f;
-	if (key_state('L'))	ship->acceleration.x -= 20.0f;
-	if (key_state('J'))	ship->acceleration.x += 20.0f;
-	if (key_state('U'))	ship->acceleration.y -= 20.0f;
-	if (key_state('O'))	ship->acceleration.y += 30.0f;
+	if (key_state('I'))	ship->physics.acceleration.z += 20.0f;
+	if (key_state('K'))	ship->physics.acceleration.z -= 20.0f;
+	if (key_state('L'))	ship->physics.acceleration.x -= 20.0f;
+	if (key_state('J'))	ship->physics.acceleration.x += 20.0f;
+	if (key_state('U'))	ship->physics.acceleration.y -= 20.0f;
+	if (key_state('O'))	ship->physics.acceleration.y += 30.0f;
 }
 
 void render_objects(engine* e) {
 	vector rasterQueue = vector_create(sizeof(triangle));
 	for (size_t o = 0; o < objects.length; o++) {
 		object* obj = (object*)vector_get(&objects, o);
-		for (size_t i = 0; i < obj->triangles.length; i++) {
-			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&obj->triangles, i), &obj->matrix, true);
+		for (size_t i = 0; i < obj->mesh.triangles.length; i++) {
+			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&obj->mesh.triangles, i), &obj->mesh.matrix, true);
 			vec3 line1 = vec3_sub(modelTri.data[1].v3, modelTri.data[0].v3);
 			vec3 line2 = vec3_sub(modelTri.data[2].v3, modelTri.data[0].v3);
 			vec3 normal = vec3_cross(line1, line2);
@@ -232,7 +231,7 @@ void render_objects(engine* e) {
 				vec3 lightDir = vec3_mul_scalar(cameraDir, -1.0f);
 				float dp = vec3_dot(normal, lightDir);
 				//CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
-				CHAR_INFO c = color_for(min(max(0.1f, dp), 0.99f), obj->color);
+				CHAR_INFO c = color_for(min(max(0.1f, dp), 0.99f), obj->mesh.color);
 
 				triangle viewTri = triangle_multiply_matrix(modelTri, &viewMatrix, true);
 				viewTri.color = c.Attributes;
@@ -340,7 +339,7 @@ void render_objects(engine* e) {
 
 void game_teardown(engine* e) {
 	for (size_t i = 0; i < objects.length; i++)
-		vector_destroy(&((object*)vector_get(&objects, i))->triangles);
+		vector_destroy(&((object*)vector_get(&objects, i))->mesh.triangles);
 	vector_destroy(&objects);
 }
 
