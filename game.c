@@ -14,19 +14,20 @@ bool game_setup(engine* e) {
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
-	obj.position = (vec3){ 0, 30, 0};
-	obj.velocity = (vec3){ 0, 0, 0 };
+	obj.position = (vec3){ 0, 60, 0};
+	obj.velocity = (vec3){ 0, -10, 0 };
 	obj.color = FG_BLUE;
-
-	obj.elasticity = 0.5f;
-	obj.mass = 1.0f;
+	obj.scale = (vec3){ 5, 5, 5 };
+	obj.elasticity = 1.0f;
+	obj.mass = 500.0f;
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
-	obj.position = (vec3) { 0, 50, 0 };
+	obj.position = (vec3) { 0, 30, 0 };
 	obj.color = FG_GREEN;
-	obj.elasticity = 0.5f;
-	obj.velocity = (vec3){ 0, 0, 0 };
+	obj.elasticity = 1.0f;
+	obj.velocity = (vec3){ 0, 10, 0 };
+	obj.scale = (vec3){ 0.5f, 0.5f, 0.5f };
 	obj.mass = 1.0f;
 	vector_append(&objects, &obj);
 
@@ -50,9 +51,8 @@ bool game_setup(engine* e) {
 
 	projectionMatrix = mat4_projection(vFov, aspect, Z_NEAR, Z_FAR);
 
-	cameraYaw = 3 * M_PI_2;
-	cameraPitch = -M_PI_4;
-	cameraPos = (vec3){ 5.0f, 35.0f, 25.0f };
+	cameraYaw = M_PI_2;
+	cameraPos = (vec3){ -5.0f, 25.0f, -25.0f };
 	update_camera();
 	shouldUpdateView = true;
 
@@ -86,7 +86,7 @@ bool game_update(engine* e, float dt) {
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
-		o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
+		//o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
 		o->updated = false;
 	}
 
@@ -127,10 +127,8 @@ void process_collisions(engine* e, float dt) {
 					vec3 n = vec3_normalize(col);
 					float vd = vec3_dot(vec3_sub(o2->velocity, o1->velocity), n);
 					float jn = (o1->mass * o2->mass) / (o1->mass + o2->mass) * (1.0f + (o1->elasticity + o2->elasticity) / 2.0f) * vd;
-					vec3 dv1 = vec3_mul_scalar(n, jn / o1->mass);
-					vec3 dv2 = vec3_mul_scalar(n, -jn / o2->mass);
-					o1->velocity = vec3_add(o1->velocity, dv1);
-					o2->velocity = vec3_add(o2->velocity, dv2);
+					o1->velocity = vec3_add(o1->velocity, vec3_mul_scalar(n, jn / o1->mass));
+					o2->velocity = vec3_add(o2->velocity, vec3_mul_scalar(n, -jn / o2->mass));
 					object_update_matrix(o1);
 					object_update_matrix(o2);
 				}
@@ -230,7 +228,8 @@ void render_objects(engine* e) {
 			normal = vec3_normalize(normal);
 			vec3 cameraRay = vec3_sub(modelTri.data[0].v3, cameraPos);
 			if ((vec3_dot(normal, cameraRay) < 0.0f) == (e->cullMode == FC_BACK)) {
-				vec3 lightDir = vec3_normalize((vec3) { 0.0f, 1.0f, 1.0f });
+				//vec3 lightDir = vec3_normalize((vec3) { 0.0f, 1.0f, 1.0f });
+				vec3 lightDir = vec3_mul_scalar(cameraDir, -1.0f);
 				float dp = vec3_dot(normal, lightDir);
 				//CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
 				CHAR_INFO c = color_for(min(max(0.1f, dp), 0.99f), obj->color);
