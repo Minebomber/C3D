@@ -14,7 +14,7 @@ bool game_setup(engine* e) {
 		.cbUpdate = object_update,
 		.cbCollision = object_collide,
 		.fixed = true,
-		.boundingBox = box_for_triangles(&model),
+		//.boundingBox = box_for_triangles(&model),
 		.bBox = bbox_for_triangles(&model),
 		.elasticity = 0.0f,
 		.position = {0.0f, 0.0f, 0.0f},
@@ -24,6 +24,7 @@ bool game_setup(engine* e) {
 		.rotation = {0, 0, 0},
 		.color = FG_RED,
 	};	
+	obj.prevPosition = obj.position;
 	vector_append(&objects, &obj);
 
 	model = triangles_from_obj("ship.obj");
@@ -36,13 +37,13 @@ bool game_setup(engine* e) {
 		.velocity = {0.0f, 0.0f, 0.0f},
 		.acceleration = {0.0f, 0.0f, 0.0f},
 		.fixed = false,
-		.boundingBox = box_for_triangles(&model),
 		.bBox = bbox_for_triangles(&model),
-		.elasticity = 0.9f,
+		.elasticity = 0.8f,
 		.scale = {1, 1, 1},
-		.rotation = {0, M_PI_2 / 3.0f, 0},
-		.color = FG_BLUE,
+		.rotation = {0, 0, 0},
+		.color = FG_CYAN,
 	};
+	obj.prevPosition = obj.position;
 	vector_append(&objects, &obj);
 
 	model = triangles_from_obj("ship.obj");
@@ -51,18 +52,17 @@ bool game_setup(engine* e) {
 		.matrix = mat4_identity(),
 		.cbUpdate = object_update,
 		.cbCollision = object_collide,
-		.position = {0.0f, 70.0f, 0.0f},
+		.position = {0.0f, 50.0f, 0.0f},
 		.velocity = {0.0f, 0.0f, 0.0f},
 		.acceleration = {0.0f, 0.0f, 0.0f},
 		.fixed = false,
-		.boundingBox = box_for_triangles(&model),
 		.bBox = bbox_for_triangles(&model),
-		.elasticity = 0.9f,
+		.elasticity = 0.8f,
 		.scale = {1, 1, 1},
-		.rotation = {0, M_PI + M_PI_2 / 3.0f, 0},
+		.rotation = {M_PI_4, M_PI_4, 0},
 		.color = FG_GREEN,
 	};
-	
+	obj.prevPosition = obj.position;
 	vector_append(&objects, &obj);
 	/*
 	model = triangles_from_obj("ship.obj");
@@ -83,6 +83,10 @@ bool game_setup(engine* e) {
 		.color = FG_CYAN,
 	};
 	vector_append(&objects, &obj);*/
+
+	for (size_t i = 0; i < objects.length; i++) {
+		object_update_matrix((object*)vector_get(&objects, i));
+	}
 
 	float aspect = ((float)e->console->height * (float)e->console->chr_height) / ((float)e->console->width * (float)e->console->chr_width);
 	vFov = horizontal_to_vertical_fov(H_FOV, aspect);
@@ -132,10 +136,9 @@ bool game_update(engine* e, float dt) {
 		object* o = (object*)vector_get(&objects, i);
 		o->acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
 	}
-
 	process_movement(e, dt);
 
-	process_collisions(e);
+	process_collisions(e, dt);
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
@@ -146,17 +149,16 @@ bool game_update(engine* e, float dt) {
 	return !key_state(VK_ESCAPE);
 }
 
-void process_collisions(engine* e) {
+void process_collisions(engine* e, float dt) {
 	for (size_t i = 0; i < objects.length; i++) {
 		for (size_t j = 0; j < objects.length; j++) {
 			if (i == j) continue;
 			object* o1 = (object*)vector_get(&objects, i);
 			object* o2 = (object*)vector_get(&objects, j);
-			if (!o1->fixed && objects_colliding(o1, o2)) {
-				vec4 dist = object_collision_distance(o1, o2);
-				if (o1->cbCollision) {
-					o1->cbCollision(o1, o2, e, dist.x, dist.y, dist.z);
-				}
+			if (!o1->fixed) {
+				vec3 col = { 0 };
+				if (o1->cbCollision && objects_colliding_sat(o1, o2, &col))
+					o1->cbCollision(o1, o2, e, col);
 			}
 		}
 	}
@@ -253,7 +255,7 @@ void render_objects(engine* e) {
 			vec3 normal = vec3_cross(line1, line2);
 			normal = vec3_normalize(normal);
 			vec3 cameraRay = vec3_sub(modelTri.data[0].v3, cameraPos);
-			if (vec3_dot(normal, cameraRay) < 0.0f) {
+			if (vec3_dot(normal, cameraRay)/* < 0.0f*/) {
 				vec3 lightDir = vec3_normalize((vec3) { 0.0f, 1.0f, 1.0f });
 				float dp = vec3_dot(normal, lightDir);
 				//CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
@@ -341,21 +343,21 @@ void render_objects(engine* e) {
 
 	for (size_t i = 0; i < rasterQueue.length; i++) {
 		triangle* t = vector_get(&rasterQueue, i);
-		console_fill_triangle(
+		/*console_fill_triangle(
+			e->console,
+			(int)(t->data[0].x), (int)(t->data[0].y),
+			(int)(t->data[1].x), (int)(t->data[1].y),
+			(int)(t->data[2].x), (int)(t->data[2].y),
+			t->symbol, t->color
+		);*/
+
+		console_triangle(
 			e->console,
 			(int)(t->data[0].x), (int)(t->data[0].y),
 			(int)(t->data[1].x), (int)(t->data[1].y),
 			(int)(t->data[2].x), (int)(t->data[2].y),
 			t->symbol, t->color
 		);
-
-		/*console_triangle(
-			e->console,
-			(int)(t->data[0].x), (int)(t->data[0].y),
-			(int)(t->data[1].x), (int)(t->data[1].y),
-			(int)(t->data[2].x), (int)(t->data[2].y),
-			PX_SOLID, FG_WHITE
-		);*/
 	}
 
 	vector_destroy(&rasterQueue);

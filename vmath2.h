@@ -81,6 +81,8 @@ vec3 vec3_normalize(vec3 v);
 
 vec4 vec4_scale_w(vec4 v);
 
+vec3 vec3_project(vec3 u, vec3 v);
+
 vec3 mat3_mul_vec3(mat3* m, vec3 v);
 vec4 mat4_mul_vec4(mat4* m, vec4 v);
 

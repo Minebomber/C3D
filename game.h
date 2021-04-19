@@ -35,7 +35,7 @@ void game_key_up(engine* e, int k);
 void game_mouse_btn(engine* e, int m, bool p);
 void game_mouse_move(engine* e, int x, int y);
 
-void process_collisions(engine* e);
+void process_collisions(engine* e, float dt);
 void process_movement(engine* e, float dt);
 void render_objects(engine* e);
 

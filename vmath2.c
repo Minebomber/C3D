@@ -105,6 +105,10 @@ vec4 vec4_scale_w(vec4 v) {
 	};
 }
 
+vec3 vec3_project(vec3 u, vec3 v) {
+	return vec3_mul_scalar(v, vec3_dot(u, v) / powf(vec3_length(v), 2.0f));
+}
+
 vec3 mat3_mul_vec3(mat3* m, vec3 v) {
 	return (vec3) {
 		v.x * m->data[0][0] + v.y * m->data[1][0] + v.z * m->data[2][0],
