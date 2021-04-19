@@ -14,19 +14,19 @@ bool game_setup(engine* e) {
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
-	obj.position = (vec3){ -20, 30, -20};
-	obj.velocity = (vec3){ 10, 0, 15 };
+	obj.position = (vec3){ 0, 30, 0};
+	obj.velocity = (vec3){ 0, 0, 0 };
 	obj.color = FG_BLUE;
 
-	obj.elasticity = 0.9f;
+	obj.elasticity = 0.5f;
 	obj.mass = 1.0f;
 	vector_append(&objects, &obj);
 
 	obj = object_create_from_obj("ship.obj");
-	obj.position = (vec3) { 20, 30, 20 };
+	obj.position = (vec3) { 0, 50, 0 };
 	obj.color = FG_GREEN;
-	obj.elasticity = 0.9f;
-	obj.velocity = (vec3){ -10, 0, -10 };
+	obj.elasticity = 0.5f;
+	obj.velocity = (vec3){ 0, 0, 0 };
 	obj.mass = 1.0f;
 	vector_append(&objects, &obj);
 
@@ -126,7 +126,7 @@ void process_collisions(engine* e, float dt) {
 					o2->position = o2->prevPosition;
 					vec3 n = vec3_normalize(col);
 					float vd = vec3_dot(vec3_sub(o2->velocity, o1->velocity), n);
-					float jn = (o1->mass * o2->mass) / (o1->mass + o2->mass) * (1.8f) * vd;
+					float jn = (o1->mass * o2->mass) / (o1->mass + o2->mass) * (1.0f + (o1->elasticity + o2->elasticity) / 2.0f) * vd;
 					vec3 dv1 = vec3_mul_scalar(n, jn / o1->mass);
 					vec3 dv2 = vec3_mul_scalar(n, -jn / o2->mass);
 					o1->velocity = vec3_add(o1->velocity, dv1);
