@@ -67,7 +67,7 @@ float absmin(float a, float b) {
 void bbox_project(vec3 a, bbox* b, float* mn, float* mx) {
 	*mn = INFINITY; *mx = -INFINITY;
 	for (size_t i = 0; i < 8; i++) {
-		float v = vec3_dot(a, b->data[i].v3);
+		float v = vec3_dot(a, b->points[i].v3);
 		if (v < *mn) *mn = v;
 		if (v > *mx) *mx = v;
 	}
@@ -144,15 +144,15 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 	vec4u* insidePoints[3] = { 0 }; size_t insideCount = 0;
 	vec4u* outsidePoints[3] = { 0 }; size_t outsideCount = 0;
 
-	float d0 = vec3_dist_to_plane(planeP, planeN, toClip->data[0].v3);
-	float d1 = vec3_dist_to_plane(planeP, planeN, toClip->data[1].v3);
-	float d2 = vec3_dist_to_plane(planeP, planeN, toClip->data[2].v3);
+	float d0 = vec3_dist_to_plane(planeP, planeN, toClip->points[0].v3);
+	float d1 = vec3_dist_to_plane(planeP, planeN, toClip->points[1].v3);
+	float d2 = vec3_dist_to_plane(planeP, planeN, toClip->points[2].v3);
 
-	if (d0 >= 0.0f) { insidePoints[insideCount++] = &toClip->data[0]; } else { outsidePoints[outsideCount++] = &toClip->data[0]; }
+	if (d0 >= 0.0f) { insidePoints[insideCount++] = &toClip->points[0]; } else { outsidePoints[outsideCount++] = &toClip->points[0]; }
 
-	if (d1 >= 0.0f) { insidePoints[insideCount++] = &toClip->data[1]; } else { outsidePoints[outsideCount++] = &toClip->data[1]; }
+	if (d1 >= 0.0f) { insidePoints[insideCount++] = &toClip->points[1]; } else { outsidePoints[outsideCount++] = &toClip->points[1]; }
 
-	if (d2 >= 0.0f) { insidePoints[insideCount++] = &toClip->data[2]; } else { outsidePoints[outsideCount++] = &toClip->data[2]; }
+	if (d2 >= 0.0f) { insidePoints[insideCount++] = &toClip->points[2]; } else { outsidePoints[outsideCount++] = &toClip->points[2]; }
 
 	if (insideCount == 0) {
 		return 0;
@@ -167,10 +167,10 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 		clipped1->color = toClip->color;
 		clipped1->symbol = toClip->symbol;
 
-		clipped1->data[0] = *insidePoints[0];
+		clipped1->points[0] = *insidePoints[0];
 
-		clipped1->data[1] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[0]->v3)}; clipped1->data[1].w = 1.0f;
-		clipped1->data[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[1]->v3) }; clipped1->data[2].w = 1.0f;
+		clipped1->points[1] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[0]->v3)}; clipped1->points[1].w = 1.0f;
+		clipped1->points[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[1]->v3) }; clipped1->points[2].w = 1.0f;
 
 		return 1;
 	}
@@ -181,13 +181,13 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 		clipped2->color = toClip->color;
 		clipped2->symbol = toClip->symbol;
 
-		clipped1->data[0] = *insidePoints[0];
-		clipped1->data[1] = *insidePoints[1];
-		clipped1->data[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[0]->v3) }; clipped1->data[2].w = 1.0f;
+		clipped1->points[0] = *insidePoints[0];
+		clipped1->points[1] = *insidePoints[1];
+		clipped1->points[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[0]->v3) }; clipped1->points[2].w = 1.0f;
 
-		clipped2->data[0] = *insidePoints[1];
-		clipped2->data[1] = clipped1->data[2];
-		clipped2->data[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[1]->v3, outsidePoints[0]->v3) }; clipped2->data[2].w = 1.0f;
+		clipped2->points[0] = *insidePoints[1];
+		clipped2->points[1] = clipped1->points[2];
+		clipped2->points[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[1]->v3, outsidePoints[0]->v3) }; clipped2->points[2].w = 1.0f;
 
 		return 2;
 	}
@@ -198,8 +198,8 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 int triangle_compare(const void* a, const void* b) {
 	const triangle* t1 = a;
 	const triangle* t2 = b;
-	float z1 = t1->data[0].z + t1->data[1].z + t1->data[2].z;
-	float z2 = t2->data[0].z + t2->data[1].z + t2->data[2].z;
+	float z1 = t1->points[0].z + t1->points[1].z + t1->points[2].z;
+	float z2 = t2->points[0].z + t2->points[1].z + t2->points[2].z;
 	if (z1 < z2) return 1;
 	if (z1 > z2) return -1;
 	return 0;
@@ -207,14 +207,14 @@ int triangle_compare(const void* a, const void* b) {
 
 triangle triangle_multiply_matrix(triangle t, mat4* m, bool scale) {
 	triangle u = {
-		(vec4u) { .v4 = mat4_mul_vec4(m, t.data[0].v4) },
-		(vec4u) { .v4 = mat4_mul_vec4(m, t.data[1].v4) },
-		(vec4u) { .v4 = mat4_mul_vec4(m, t.data[2].v4) },
+		(vec4u) { .v4 = mat4_mul_vec4(m, t.points[0].v4) },
+		(vec4u) { .v4 = mat4_mul_vec4(m, t.points[1].v4) },
+		(vec4u) { .v4 = mat4_mul_vec4(m, t.points[2].v4) },
 	};
 	if (scale) {
-		u.data[0].v4 = vec4_scale_w(u.data[0].v4);
-		u.data[1].v4 = vec4_scale_w(u.data[1].v4);
-		u.data[2].v4 = vec4_scale_w(u.data[2].v4);
+		u.points[0].v4 = vec4_scale_w(u.points[0].v4);
+		u.points[1].v4 = vec4_scale_w(u.points[1].v4);
+		u.points[2].v4 = vec4_scale_w(u.points[2].v4);
 	}
 	return u;
 }
@@ -230,23 +230,23 @@ bbox bbox_for_triangles(vector* v) {
 	for (size_t i = 0; i < v->length; i++) {
 		triangle* t = (triangle*)vector_get(v, i);
 		if (first) {
-			minX = t->data[0].x; maxX = t->data[0].x;
-			minY = t->data[0].y; maxY = t->data[0].y;
-			minZ = t->data[0].z; maxZ = t->data[0].z;
+			minX = t->points[0].x; maxX = t->points[0].x;
+			minY = t->points[0].y; maxY = t->points[0].y;
+			minZ = t->points[0].z; maxZ = t->points[0].z;
 			first = false;
 		}
 
 		for (size_t j = 0; j < 3; j++) {
-			if (t->data[j].x < minX) minX = t->data[j].x;
-			if (t->data[j].x > maxX) maxX = t->data[j].x;
-			if (t->data[j].y < minY) minY = t->data[j].y;
-			if (t->data[j].y > maxY) maxY = t->data[j].y;
-			if (t->data[j].z < minZ) minZ = t->data[j].z;
-			if (t->data[j].z > maxZ) maxZ = t->data[j].z;
+			if (t->points[j].x < minX) minX = t->points[j].x;
+			if (t->points[j].x > maxX) maxX = t->points[j].x;
+			if (t->points[j].y < minY) minY = t->points[j].y;
+			if (t->points[j].y > maxY) maxY = t->points[j].y;
+			if (t->points[j].z < minZ) minZ = t->points[j].z;
+			if (t->points[j].z > maxZ) maxZ = t->points[j].z;
 		}
 	}
 	return (bbox) {
-		.data = {
+		.points = {
 			(vec4) { minX, minY, minZ, 1.0f },
 			(vec4) { maxX, minY, minZ, 1.0f },
 			(vec4) { maxX, minY, maxZ, 1.0f },
@@ -264,15 +264,15 @@ bbox bbox_for_triangles(vector* v) {
 
 bbox true_bbox(object* o) {
 	return (bbox) {
-		.data = {
-			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[0].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[1].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[2].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[3].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[4].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[5].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[6].v4) },
-			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.data[7].v4) },
+		.points = {
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.points[0].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.points[1].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.points[2].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.points[3].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.points[4].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.points[5].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.points[6].v4) },
+			(vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.points[7].v4) },
 		},
 		.xAxis = (vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.xAxis.v4) },
 		.yAxis = (vec4u) { .v4 = mat4_mul_vec4(&o->mesh.matrix, o->mesh.boundingBox.yAxis.v4) },

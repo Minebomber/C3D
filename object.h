@@ -11,7 +11,7 @@
 typedef struct engine engine;
 
 typedef struct {
-	vec4u data[3];
+	vec4u points[3];
 	wchar_t symbol;
 	unsigned short color;
 } triangle;
@@ -29,7 +29,7 @@ typedef struct {
  0-1     * x
 */
 typedef struct {
-	vec4u data[8];
+	vec4u points[8];
 	vec4u xAxis, yAxis, zAxis;
 } bbox;
 

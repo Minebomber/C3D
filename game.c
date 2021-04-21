@@ -7,7 +7,7 @@ float horizontal_to_vertical_fov(float hFov, float aspect) {
 bool game_setup(engine* e) {
 	objects = vector_create(sizeof(object));
 
-	object obj = object_create_with_color("cube.obj", FG_RED);
+	object obj = object_create_with_color("cube.obj", FG_WHITE);
 	obj.physics.fixed = true;
 	obj.transform.rotation = (vec3){ 0, 0, 0 };
 	obj.transform.position = (vec3){ 0, 0, 0 };
@@ -57,6 +57,7 @@ bool game_setup(engine* e) {
 	shouldUpdateView = true;
 
 	e->drawMode = DM_WIREFRAME;
+	e->wireColor = FG_WHITE;
 	e->cullMode = FC_BACK;
 
 	texture testTex = texture_create_from_file("simple.tex");
@@ -224,11 +225,11 @@ void render_objects(engine* e) {
 		object* obj = (object*)vector_get(&objects, o);
 		for (size_t i = 0; i < obj->mesh.triangles.length; i++) {
 			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&obj->mesh.triangles, i), &obj->mesh.matrix, true);
-			vec3 line1 = vec3_sub(modelTri.data[1].v3, modelTri.data[0].v3);
-			vec3 line2 = vec3_sub(modelTri.data[2].v3, modelTri.data[0].v3);
+			vec3 line1 = vec3_sub(modelTri.points[1].v3, modelTri.points[0].v3);
+			vec3 line2 = vec3_sub(modelTri.points[2].v3, modelTri.points[0].v3);
 			vec3 normal = vec3_cross(line1, line2);
 			normal = vec3_normalize(normal);
-			vec3 cameraRay = vec3_sub(modelTri.data[0].v3, cameraPos);
+			vec3 cameraRay = vec3_sub(modelTri.points[0].v3, cameraPos);
 			if ((vec3_dot(normal, cameraRay) < 0.0f) == (e->cullMode == FC_BACK)) {
 				//vec3 lightDir = vec3_normalize((vec3) { 0.0f, 1.0f, 1.0f });
 				vec3 lightDir = vec3_mul_scalar(cameraDir, -1.0f);
@@ -288,23 +289,23 @@ void render_objects(engine* e) {
 					projTri.color = clippedTri->color;
 					projTri.symbol = clippedTri->symbol;
 
-					projTri.data[0].x *= -1.0f;
-					projTri.data[0].y *= -1.0f;
-					projTri.data[1].x *= -1.0f;
-					projTri.data[1].y *= -1.0f;
-					projTri.data[2].x *= -1.0f;
-					projTri.data[2].y *= -1.0f;
+					projTri.points[0].x *= -1.0f;
+					projTri.points[0].y *= -1.0f;
+					projTri.points[1].x *= -1.0f;
+					projTri.points[1].y *= -1.0f;
+					projTri.points[2].x *= -1.0f;
+					projTri.points[2].y *= -1.0f;
 
-					projTri.data[0].x += 1.0f; projTri.data[0].y += 1.0f;
-					projTri.data[1].x += 1.0f; projTri.data[1].y += 1.0f;
-					projTri.data[2].x += 1.0f; projTri.data[2].y += 1.0f;
+					projTri.points[0].x += 1.0f; projTri.points[0].y += 1.0f;
+					projTri.points[1].x += 1.0f; projTri.points[1].y += 1.0f;
+					projTri.points[2].x += 1.0f; projTri.points[2].y += 1.0f;
 
-					projTri.data[0].x *= 0.5f * (float)e->console->width;
-					projTri.data[1].x *= 0.5f * (float)e->console->width;
-					projTri.data[2].x *= 0.5f * (float)e->console->width;
-					projTri.data[0].y *= 0.5f * (float)e->console->height;
-					projTri.data[1].y *= 0.5f * (float)e->console->height;
-					projTri.data[2].y *= 0.5f * (float)e->console->height;
+					projTri.points[0].x *= 0.5f * (float)e->console->width;
+					projTri.points[1].x *= 0.5f * (float)e->console->width;
+					projTri.points[2].x *= 0.5f * (float)e->console->width;
+					projTri.points[0].y *= 0.5f * (float)e->console->height;
+					projTri.points[1].y *= 0.5f * (float)e->console->height;
+					projTri.points[2].y *= 0.5f * (float)e->console->height;
 
 					vector_append(&rasterQueue, &projTri);
 					free(node);
@@ -321,17 +322,17 @@ void render_objects(engine* e) {
 		if (e->drawMode & DM_SOLID)
 			console_fill_triangle(
 				e->console,
-				(int)(t->data[0].x), (int)(t->data[0].y),
-				(int)(t->data[1].x), (int)(t->data[1].y),
-				(int)(t->data[2].x), (int)(t->data[2].y),
+				(int)(t->points[0].x), (int)(t->points[0].y),
+				(int)(t->points[1].x), (int)(t->points[1].y),
+				(int)(t->points[2].x), (int)(t->points[2].y),
 				t->symbol, t->color
 			);
 		if (e->drawMode & DM_WIREFRAME)
 			console_triangle(
 				e->console,
-				(int)(t->data[0].x), (int)(t->data[0].y),
-				(int)(t->data[1].x), (int)(t->data[1].y),
-				(int)(t->data[2].x), (int)(t->data[2].y),
+				(int)(t->points[0].x), (int)(t->points[0].y),
+				(int)(t->points[1].x), (int)(t->points[1].y),
+				(int)(t->points[2].x), (int)(t->points[2].y),
 				e->wireColor ? PX_SOLID : t->symbol,
 				e->wireColor ? e->wireColor : t->color
 			);
