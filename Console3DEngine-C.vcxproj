@@ -146,6 +146,7 @@
     <ClCompile Include="linked_list.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="object.c" />
+    <ClCompile Include="texture.c" />
     <ClCompile Include="vector.c" />
     <ClCompile Include="vmath2.c" />
   </ItemGroup>
@@ -156,6 +157,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="linked_list.h" />
     <ClInclude Include="object.h" />
+    <ClInclude Include="texture.h" />
     <ClInclude Include="vector.h" />
     <ClInclude Include="vmath2.h" />
   </ItemGroup>

@@ -5,6 +5,7 @@
 #include "vector.h"
 #include "linked_list.h"
 #include "object.h"
+#include "texture.h"
 
 float vFov;
 

@@ -1,7 +1,7 @@
 #include "object.h"
 #pragma warning(disable:4996)
 
-object object_create_from_obj(const char* path) {
+object object_create_with_color(const char* path, unsigned short color) {
 	vector t = triangles_from_obj(path);
 	object o = {
 		.cbSetup = object_setup,
@@ -11,13 +11,13 @@ object object_create_from_obj(const char* path) {
 			.triangles = t,
 			.matrix = mat4_identity(),
 			.boundingBox = bbox_for_triangles(&t),
-			.color = FG_WHITE,
+			.texture = texture_create_from_color(color),
 		},
 		
 		.transform = {
 			.scale = {1.0f, 1.0f, 1.0f},
 		},
-		
+
 	};
 	return o;
 }

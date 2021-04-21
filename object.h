@@ -6,6 +6,7 @@
 #include "vmath2.h"
 #include "vector.h"
 #include "constants.h"
+#include "texture.h"
 
 typedef struct engine engine;
 
@@ -14,8 +15,6 @@ typedef struct {
 	wchar_t symbol;
 	unsigned short color;
 } triangle;
-
-
 
 typedef struct {
 	float x0, y0, z0;
@@ -39,7 +38,7 @@ typedef struct object {
 		vector triangles;
 		mat4 matrix;
 		bbox boundingBox;
-		unsigned short color;
+		texture texture;
 	} mesh;
 	struct {
 		vec3 position;
@@ -63,7 +62,8 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 int triangle_compare(const void* a, const void* b);
 triangle triangle_multiply_matrix(triangle t, mat4* m, bool scale);
 
-object object_create_from_obj(const char* path);
+object object_create_with_color(const char* path, unsigned short color);
+object object_create_with_texture(const char* pathObj, const char* pathTex);
 void object_update_matrix(object* o);
 void object_update(object* o, engine* e, float dt);
 void object_setup(object* o, engine* e);

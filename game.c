@@ -7,29 +7,29 @@ float horizontal_to_vertical_fov(float hFov, float aspect) {
 bool game_setup(engine* e) {
 	objects = vector_create(sizeof(object));
 
-	object obj = object_create_from_obj("axis4.obj");
+	object obj = object_create_with_color("cube.obj", FG_RED);
 	obj.physics.fixed = true;
-	obj.mesh.color = FG_RED;
 	obj.transform.rotation = (vec3){ 0, 0, 0 };
+	obj.transform.position = (vec3){ 0, 0, 0 };
 	vector_append(&objects, &obj);
 
-	obj = object_create_from_obj("ship.obj");
-	obj.transform.position = (vec3){ 0, 60, 0};
-	obj.physics.velocity = (vec3){ 0, -10, 0 };
-	obj.mesh.color = FG_BLUE;
-	obj.transform.scale = (vec3){ 5, 5, 5 };
-	obj.physics.elasticity = 1.0f;
-	obj.physics.mass = 500.0f;
-	vector_append(&objects, &obj);
-
-	obj = object_create_from_obj("ship.obj");
-	obj.transform.position = (vec3) { 0, 30, 0 };
-	obj.mesh.color = FG_GREEN;
-	obj.physics.elasticity = 1.0f;
-	obj.physics.velocity = (vec3){ 0, 10, 0 };
-	obj.transform.scale = (vec3){ 0.5f, 0.5f, 0.5f };
-	obj.physics.mass = 1.0f;
-	vector_append(&objects, &obj);
+	//obj = object_create_with_color("ship.obj", FG_BLUE);
+	//obj.transform.position = (vec3){ 0, 50, 0};
+	//obj.physics.velocity = (vec3){ 0, 0, 0 };
+	////obj.transform.scale = (vec3){ 5, 5, 5 };
+	//obj.physics.elasticity = 0.8f;
+	//obj.transform.rotation = (vec3){ 0, 0, 0 };
+	//obj.physics.mass = 1.0f;
+	//vector_append(&objects, &obj);
+	//
+	//obj = object_create_with_color("ship.obj", FG_GREEN);
+	//obj.transform.position = (vec3) { 0, 20, 0 };
+	//obj.physics.elasticity = 0.8f;
+	//obj.physics.velocity = (vec3){ 0, 0, 0 };
+	//obj.transform.scale = (vec3){ 1, 1, 1 };
+	//obj.transform.rotation = (vec3){ 0, 0, 0 };
+	//obj.physics.mass = 1.0f;
+	//vector_append(&objects, &obj);
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
@@ -52,12 +52,15 @@ bool game_setup(engine* e) {
 	projectionMatrix = mat4_projection(vFov, aspect, Z_NEAR, Z_FAR);
 
 	cameraYaw = M_PI_2;
-	cameraPos = (vec3){ -5.0f, 25.0f, -25.0f };
+	cameraPos = (vec3){ 0.0f, 0.0f, -5.0f };
 	update_camera();
 	shouldUpdateView = true;
 
-	e->drawMode = DM_SOLID;
+	e->drawMode = DM_WIREFRAME;
 	e->cullMode = FC_BACK;
+
+	texture testTex = texture_create_from_file("simple.tex");
+	texture_destroy(&testTex);
 
 	return true;
 }
@@ -86,7 +89,7 @@ bool game_update(engine* e, float dt) {
 
 	for (size_t i = 0; i < objects.length; i++) {
 		object* o = (object*)vector_get(&objects, i);
-		//o->physics.acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
+		o->physics.acceleration = (vec3){ 0.0f, -10.0f, 0.0f };
 	}
 
 	process_movement(e, dt);
@@ -207,12 +210,12 @@ void process_movement(engine* e, float dt) {
 	}
 
 	object* ship = vector_get(&objects, 1);
-	if (key_state('I'))	ship->physics.acceleration.z += 20.0f;
-	if (key_state('K'))	ship->physics.acceleration.z -= 20.0f;
-	if (key_state('L'))	ship->physics.acceleration.x -= 20.0f;
-	if (key_state('J'))	ship->physics.acceleration.x += 20.0f;
-	if (key_state('U'))	ship->physics.acceleration.y -= 20.0f;
-	if (key_state('O'))	ship->physics.acceleration.y += 30.0f;
+	if (key_state('I'))	ship->physics.velocity.z += 30.0f * dt;
+	if (key_state('K'))	ship->physics.velocity.z -= 30.0f * dt;
+	if (key_state('L'))	ship->physics.velocity.x -= 30.0f * dt;
+	if (key_state('J'))	ship->physics.velocity.x += 30.0f * dt;
+	if (key_state('U'))	ship->physics.velocity.y -= 30.0f * dt;
+	if (key_state('O'))	ship->physics.velocity.y += 30.0f * dt;
 }
 
 void render_objects(engine* e) {
@@ -231,7 +234,7 @@ void render_objects(engine* e) {
 				vec3 lightDir = vec3_mul_scalar(cameraDir, -1.0f);
 				float dp = vec3_dot(normal, lightDir);
 				//CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
-				CHAR_INFO c = color_for(min(max(0.1f, dp), 0.99f), obj->mesh.color);
+				CHAR_INFO c = color_for(min(max(0.1f, dp), 0.99f), obj->mesh.texture.data[0]);
 
 				triangle viewTri = triangle_multiply_matrix(modelTri, &viewMatrix, true);
 				viewTri.color = c.Attributes;
