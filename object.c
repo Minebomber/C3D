@@ -50,7 +50,10 @@ void object_setup(object* o, engine* e) {
 }
 
 void object_teardown(object* o, engine* e) {
-
+	if (o->mesh.texture.data)
+		texture_destroy(&o->mesh.texture);
+	if (o->mesh.triangles.data)
+		vector_destroy(&o->mesh.triangles);
 }
 
 bool less(float a, float b) {

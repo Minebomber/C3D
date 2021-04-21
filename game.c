@@ -341,8 +341,10 @@ void render_objects(engine* e) {
 }
 
 void game_teardown(engine* e) {
-	for (size_t i = 0; i < objects.length; i++)
-		vector_destroy(&((object*)vector_get(&objects, i))->mesh.triangles);
+	for (size_t i = 0; i < objects.length; i++) {
+		object* o = (object*)vector_get(&objects, i);
+		if (o->cbTeardown) o->cbTeardown(o, e);
+	}
 	vector_destroy(&objects);
 }
 
