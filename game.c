@@ -285,8 +285,6 @@ void render_objects(engine* e) {
 				//CHAR_INFO c = color_for(dp, obj->mesh.texture.data[0]);
 
 				triangle viewTri = triangle_multiply_matrix(modelTri, &viewMatrix);
-				//viewTri.color = c.Attributes;
-				//viewTri.symbol = c.Char.UnicodeChar;
 				viewTri.fragData.texture = &obj->mesh.texture;
 				viewTri.fragData.lightNormalDot = dp;
 
@@ -349,9 +347,6 @@ void render_objects(engine* e) {
 
 					triangle_scale_points(&projTri);
 
-					projTri.color = clippedTri->color;
-					projTri.symbol = clippedTri->symbol;
-
 					projTri.points[0].x *= -1.0f;
 					projTri.points[0].y *= -1.0f;
 					projTri.points[1].x *= -1.0f;
@@ -383,19 +378,20 @@ void render_objects(engine* e) {
 	for (size_t i = 0; i < rasterQueue.length; i++) {
 		triangle* t = vector_get(&rasterQueue, i);
 		if (e->drawMode & DM_SOLID)
-			textured_triangle(e->console,
-						 (int)(t->points[0].x), (int)(t->points[0].y), t->texCoords[0].x, t->texCoords[0].y, t->texCoords[0].z,
-						 (int)(t->points[1].x), (int)(t->points[1].y), t->texCoords[1].x, t->texCoords[1].y, t->texCoords[1].z,
-						 (int)(t->points[2].x), (int)(t->points[2].y), t->texCoords[2].x, t->texCoords[2].y, t->texCoords[2].z,
-						 t->fragData.texture, t->fragData.lightNormalDot);
+			textured_triangle(
+				e->console,
+				(int)(t->points[0].x), (int)(t->points[0].y), t->texCoords[0].x, t->texCoords[0].y, t->texCoords[0].z,
+				(int)(t->points[1].x), (int)(t->points[1].y), t->texCoords[1].x, t->texCoords[1].y, t->texCoords[1].z,
+				(int)(t->points[2].x), (int)(t->points[2].y), t->texCoords[2].x, t->texCoords[2].y, t->texCoords[2].z,
+				t->fragData.texture, t->fragData.lightNormalDot
+			);
 		if (e->drawMode & DM_WIREFRAME)
 			console_triangle(
 				e->console,
 				(int)(t->points[0].x), (int)(t->points[0].y),
 				(int)(t->points[1].x), (int)(t->points[1].y),
 				(int)(t->points[2].x), (int)(t->points[2].y),
-				e->wireColor ? PX_SOLID : t->symbol,
-				e->wireColor ? e->wireColor : t->color
+				PX_SOLID, e->wireColor
 			);			
 	}
 

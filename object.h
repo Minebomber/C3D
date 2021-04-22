@@ -13,8 +13,6 @@ typedef struct engine engine;
 typedef struct {
 	vec4u points[3];
 	vec3u texCoords[3];
-	wchar_t symbol;
-	unsigned short color;
 	struct {
 		texture* texture;
 		float lightNormalDot;

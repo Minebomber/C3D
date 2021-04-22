@@ -207,8 +207,6 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 	float t;
 
 	if (inCount == 1 && outCount == 2) {
-		clipped1->color = toClip->color;
-		clipped1->symbol = toClip->symbol;
 		clipped1->fragData = toClip->fragData;
 
 		clipped1->points[0] = *inPoints[0];
@@ -225,10 +223,6 @@ int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1
 	}
 
 	if (inCount == 2 && outCount == 1) {
-		clipped1->color = toClip->color;
-		clipped1->symbol = toClip->symbol;
-		clipped2->color = toClip->color;
-		clipped2->symbol = toClip->symbol;
 		clipped1->fragData = toClip->fragData;
 		clipped2->fragData = toClip->fragData;
 
@@ -368,8 +362,6 @@ vector triangles_from_obj(const char* path) {
 					(vec4u) { .v4 = *(vec4*)vector_get(&vertices, j - 1) },
 					(vec4u) { .v4 = *(vec4*)vector_get(&vertices, k - 1) },
 				},
-				.symbol = 0, 
-				.color = 0,
 			};
 			vector_append(&triangles, &t);
 		}
