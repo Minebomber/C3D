@@ -282,13 +282,13 @@ void render_objects(engine* e) {
 				vec3 lightDir = vec3_mul_scalar(cameraDir, -1.0f);
 				float dp = vec3_dot(normal, lightDir);
 				//CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
-				CHAR_INFO c = color_for(min(max(0.1f, dp), 0.99f), obj->mesh.texture.data[0]);
+				//CHAR_INFO c = color_for(dp, obj->mesh.texture.data[0]);
 
 				triangle viewTri = triangle_multiply_matrix(modelTri, &viewMatrix);
-				viewTri.color = c.Attributes;
-				viewTri.symbol = c.Char.UnicodeChar;
+				//viewTri.color = c.Attributes;
+				//viewTri.symbol = c.Char.UnicodeChar;
 				viewTri.fragData.texture = &obj->mesh.texture;
-				viewTri.fragData.lightNormalDot = min(max(0.1f, dp), 0.99f);
+				viewTri.fragData.lightNormalDot = dp;
 
 				triangle clipped[2] = { 0 };
 				linked_list clipQueue = { 0 };
