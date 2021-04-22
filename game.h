@@ -5,7 +5,6 @@
 #include "vector.h"
 #include "linked_list.h"
 #include "object.h"
-#include "texture.h"
 
 float vFov;
 
@@ -54,3 +53,9 @@ CHAR_INFO grey_pixel(float l);
 
 float horizontal_to_vertical_fov(float hFov, float aspect);
 float rand_range(float min, float max);
+
+void textured_triangle(console* c,
+					   int x1, int y1, float u1, float v1, float w1,
+					   int x2, int y2, float u2, float v2, float w2,
+					   int x3, int y3, float u3, float v3, float w3,
+					   texture* tex, float l);

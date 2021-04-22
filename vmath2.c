@@ -284,14 +284,14 @@ mat4 mat4_quick_inverse(mat4* m) {
 	return o;
 }
 
-vec3 vec3_intersect_plane(vec3 planeP, vec3 planeN, vec3 lineStart, vec3 lineEnd) {
+vec3 vec3_intersect_plane(vec3 planeP, vec3 planeN, vec3 lineStart, vec3 lineEnd, float* tVal) {
 	planeN = vec3_normalize(planeN);
 	float planeD = -vec3_dot(planeN, planeP);
 	float ad = vec3_dot(lineStart, planeN);
 	float bd = vec3_dot(lineEnd, planeN);
-	float t = (-planeD - ad) / (bd - ad);
+	*tVal = (-planeD - ad) / (bd - ad);
 	vec3 lineSegment = vec3_sub(lineEnd, lineStart);
-	vec3 intersect = vec3_mul_scalar(lineSegment, t);
+	vec3 intersect = vec3_mul_scalar(lineSegment, *tVal);
 	return vec3_add(lineStart, intersect);
 }
 float vec3_dist_to_plane(vec3 planeP, vec3 planeN, vec3 v) {

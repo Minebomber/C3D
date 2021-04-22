@@ -12,8 +12,13 @@ typedef struct engine engine;
 
 typedef struct {
 	vec4u points[3];
+	vec3u texCoords[3];
 	wchar_t symbol;
 	unsigned short color;
+	struct {
+		texture* texture;
+		float lightNormalDot;
+	} fragData;
 } triangle;
 
 typedef struct {
@@ -60,7 +65,8 @@ typedef struct object {
 
 int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2);
 int triangle_compare(const void* a, const void* b);
-triangle triangle_multiply_matrix(triangle t, mat4* m, bool scale);
+triangle triangle_multiply_matrix(triangle t, mat4* m);
+void triangle_scale_points(triangle* t);
 
 object object_create_with_color(const char* path, unsigned short color);
 object object_create_with_texture(const char* pathObj, const char* pathTex);

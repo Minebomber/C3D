@@ -22,6 +22,27 @@ object object_create_with_color(const char* path, unsigned short color) {
 	return o;
 }
 
+object object_create_with_texture(const char* pathObj, const char* pathTex) {
+	vector t = triangles_from_obj(pathObj);
+	object o = {
+		.cbSetup = object_setup,
+		.cbUpdate = object_update,
+		.cbTeardown = object_teardown,
+		.mesh = {
+			.triangles = t,
+			.matrix = mat4_identity(),
+			.boundingBox = bbox_for_triangles(&t),
+			.texture = texture_create_from_file(pathTex),
+		},
+
+		.transform = {
+			.scale = {1.0f, 1.0f, 1.0f},
+		},
+
+	};
+	return o;
+}
+
 void object_update(object* o, engine* e, float dt) {
 	o->physics.prevPosition = o->transform.position;
 	if (!o->physics.fixed) {
@@ -141,53 +162,95 @@ bool objects_colliding_sat(object* o1, object* o2, vec3* overlap) {
 int triangle_clip(vec3 planeP, vec3 planeN, triangle* toClip, triangle* clipped1, triangle* clipped2) {
 	planeN = vec3_normalize(planeN);
 
-	vec4u* insidePoints[3] = { 0 }; size_t insideCount = 0;
-	vec4u* outsidePoints[3] = { 0 }; size_t outsideCount = 0;
+	vec4u* inPoints[3] = { 0 }; size_t inCount = 0;
+	vec4u* outPoints[3] = { 0 }; size_t outCount = 0;
+	vec3u* inTexCoords[3] = { 0 };
+	vec3u* outTexCoords[3] = { 0 };
 
 	float d0 = vec3_dist_to_plane(planeP, planeN, toClip->points[0].v3);
 	float d1 = vec3_dist_to_plane(planeP, planeN, toClip->points[1].v3);
 	float d2 = vec3_dist_to_plane(planeP, planeN, toClip->points[2].v3);
 
-	if (d0 >= 0.0f) { insidePoints[insideCount++] = &toClip->points[0]; } else { outsidePoints[outsideCount++] = &toClip->points[0]; }
+	if (d0 >= 0.0f) { 
+		inTexCoords[inCount] = &toClip->texCoords[0]; 
+		inPoints[inCount++] = &toClip->points[0]; 
+	} else { 
+		outTexCoords[outCount] = &toClip->texCoords[0]; 
+		outPoints[outCount++] = &toClip->points[0]; 
+	}
 
-	if (d1 >= 0.0f) { insidePoints[insideCount++] = &toClip->points[1]; } else { outsidePoints[outsideCount++] = &toClip->points[1]; }
+	if (d1 >= 0.0f) { 
+		inTexCoords[inCount] = &toClip->texCoords[1]; 
+		inPoints[inCount++] = &toClip->points[1]; 
+	} else { 
+		outTexCoords[outCount] = &toClip->texCoords[1]; 
+		outPoints[outCount++] = &toClip->points[1]; 
+	}
 
-	if (d2 >= 0.0f) { insidePoints[insideCount++] = &toClip->points[2]; } else { outsidePoints[outsideCount++] = &toClip->points[2]; }
+	if (d2 >= 0.0f) { 
+		inTexCoords[inCount] = &toClip->texCoords[2];
+		inPoints[inCount++] = &toClip->points[2]; 
+	} else { 
+		outTexCoords[outCount] = &toClip->texCoords[2];
+		outPoints[outCount++] = &toClip->points[2];
+	}
 
-	if (insideCount == 0) {
+	if (inCount == 0) {
 		return 0;
 	}
 
-	if (insideCount == 3) {
+	if (inCount == 3) {
 		*clipped1 = *toClip;
 		return 1;
 	}
 
-	if (insideCount == 1 && outsideCount == 2) {
+	float t;
+
+	if (inCount == 1 && outCount == 2) {
 		clipped1->color = toClip->color;
 		clipped1->symbol = toClip->symbol;
+		clipped1->fragData = toClip->fragData;
 
-		clipped1->points[0] = *insidePoints[0];
+		clipped1->points[0] = *inPoints[0];
+		clipped1->texCoords[0] = *inTexCoords[0];
 
-		clipped1->points[1] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[0]->v3)}; clipped1->points[1].w = 1.0f;
-		clipped1->points[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[1]->v3) }; clipped1->points[2].w = 1.0f;
+		clipped1->points[1].v3 = vec3_intersect_plane(planeP, planeN, inPoints[0]->v3, outPoints[0]->v3, &t); 
+		clipped1->points[1].w = 1.0f;
+		clipped1->texCoords[1].v3 = vec3_add(vec3_mul_scalar(vec3_sub(outTexCoords[0]->v3, inTexCoords[0]->v3), t), inTexCoords[0]->v3);
 
+		clipped1->points[2].v3 = vec3_intersect_plane(planeP, planeN, inPoints[0]->v3, outPoints[1]->v3, &t); 
+		clipped1->points[2].w = 1.0f;
+		clipped1->texCoords[2].v3 = vec3_add(vec3_mul_scalar(vec3_sub(outTexCoords[1]->v3, inTexCoords[0]->v3), t), inTexCoords[0]->v3);
 		return 1;
 	}
 
-	if (insideCount == 2 && outsideCount == 1) {
+	if (inCount == 2 && outCount == 1) {
 		clipped1->color = toClip->color;
 		clipped1->symbol = toClip->symbol;
 		clipped2->color = toClip->color;
 		clipped2->symbol = toClip->symbol;
+		clipped1->fragData = toClip->fragData;
+		clipped2->fragData = toClip->fragData;
 
-		clipped1->points[0] = *insidePoints[0];
-		clipped1->points[1] = *insidePoints[1];
-		clipped1->points[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[0]->v3, outsidePoints[0]->v3) }; clipped1->points[2].w = 1.0f;
+		clipped1->points[0] = *inPoints[0];
+		clipped1->texCoords[0] = *inTexCoords[0];
 
-		clipped2->points[0] = *insidePoints[1];
+		clipped1->points[1] = *inPoints[1];
+		clipped1->texCoords[1] = *inTexCoords[1];
+
+		clipped1->points[2].v3 = vec3_intersect_plane(planeP, planeN, inPoints[0]->v3, outPoints[0]->v3, &t); 
+		clipped1->points[2].w = 1.0f;
+		clipped1->texCoords[2].v3 = vec3_add(vec3_mul_scalar(vec3_sub(outTexCoords[0]->v3, inTexCoords[0]->v3), t), inTexCoords[0]->v3);
+
+		clipped2->points[0] = *inPoints[1];
+		clipped2->texCoords[0] = *inTexCoords[1];
+
 		clipped2->points[1] = clipped1->points[2];
-		clipped2->points[2] = (vec4u){ .v3 = vec3_intersect_plane(planeP, planeN, insidePoints[1]->v3, outsidePoints[0]->v3) }; clipped2->points[2].w = 1.0f;
+		clipped2->texCoords[1] = clipped1->texCoords[2];
+
+		clipped2->points[2].v3 = vec3_intersect_plane(planeP, planeN, inPoints[1]->v3, outPoints[0]->v3, &t); 
+		clipped2->points[2].w = 1.0f;
+		clipped2->texCoords[2].v3 = vec3_add(vec3_mul_scalar(vec3_sub(outTexCoords[0]->v3, inTexCoords[1]->v3), t), inTexCoords[1]->v3);
 
 		return 2;
 	}
@@ -205,18 +268,18 @@ int triangle_compare(const void* a, const void* b) {
 	return 0;
 }
 
-triangle triangle_multiply_matrix(triangle t, mat4* m, bool scale) {
-	triangle u = {
-		(vec4u) { .v4 = mat4_mul_vec4(m, t.points[0].v4) },
-		(vec4u) { .v4 = mat4_mul_vec4(m, t.points[1].v4) },
-		(vec4u) { .v4 = mat4_mul_vec4(m, t.points[2].v4) },
-	};
-	if (scale) {
-		u.points[0].v4 = vec4_scale_w(u.points[0].v4);
-		u.points[1].v4 = vec4_scale_w(u.points[1].v4);
-		u.points[2].v4 = vec4_scale_w(u.points[2].v4);
-	}
-	return u;
+triangle triangle_multiply_matrix(triangle t, mat4* m) {
+	triangle o = t;
+	o.points[0].v4 = mat4_mul_vec4(m, t.points[0].v4);
+	o.points[1].v4 = mat4_mul_vec4(m, t.points[1].v4);
+	o.points[2].v4 = mat4_mul_vec4(m, t.points[2].v4);
+	return o;
+}
+
+void triangle_scale_points(triangle* t) {
+	t->points[0].v4 = vec4_scale_w(t->points[0].v4);
+	t->points[1].v4 = vec4_scale_w(t->points[1].v4);
+	t->points[2].v4 = vec4_scale_w(t->points[2].v4);
 }
 
 bbox bbox_for_triangles(vector* v) {
@@ -300,12 +363,13 @@ vector triangles_from_obj(const char* path) {
 			size_t i, j, k;
 			int _ = sscanf(line, "%c %d %d %d", &junk, &i, &j, &k);
 			triangle t = {
-				{
+				.points = {
 					(vec4u) { .v4 = *(vec4*)vector_get(&vertices, i - 1) },
 					(vec4u) { .v4 = *(vec4*)vector_get(&vertices, j - 1) },
 					(vec4u) { .v4 = *(vec4*)vector_get(&vertices, k - 1) },
 				},
-				0, 0
+				.symbol = 0, 
+				.color = 0,
 			};
 			vector_append(&triangles, &t);
 		}

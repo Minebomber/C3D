@@ -109,5 +109,5 @@ mat4 mat4_projection(float fov, float aspect, float zNear, float zFar);
 mat4 mat4_point_at(vec3 pos, vec3 target, vec3 up);
 mat4 mat4_quick_inverse(mat4* m);
 
-vec3 vec3_intersect_plane(vec3 planeP, vec3 planeN, vec3 lineStart, vec3 lineEnd);
+vec3 vec3_intersect_plane(vec3 planeP, vec3 planeN, vec3 lineStart, vec3 lineEnd, float* tVal);
 float vec3_dist_to_plane(vec3 planeP, vec3 planeN, vec3 v);

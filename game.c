@@ -7,11 +7,61 @@ float horizontal_to_vertical_fov(float hFov, float aspect) {
 bool game_setup(engine* e) {
 	objects = vector_create(sizeof(object));
 
-	object obj = object_create_with_color("cube.obj", FG_WHITE);
+	object obj = object_create_with_texture("cube.obj", "simple.tex");
 	obj.physics.fixed = true;
 	obj.transform.rotation = (vec3){ 0, 0, 0 };
 	obj.transform.position = (vec3){ 0, 0, 0 };
 	vector_append(&objects, &obj);
+
+	// Setup texture uvs for cube
+
+	((triangle*)vector_get(&obj.mesh.triangles, 0))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 0))->texCoords[1] = (vec3u){ .x = 0, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 0))->texCoords[2] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+																						
+	((triangle*)vector_get(&obj.mesh.triangles, 1))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 1))->texCoords[1] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 1))->texCoords[2] = (vec3u){ .x = 1, .y = 1, .z = 1 };
+																						  
+	((triangle*)vector_get(&obj.mesh.triangles, 2))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 2))->texCoords[1] = (vec3u){ .x = 0, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 2))->texCoords[2] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+
+	((triangle*)vector_get(&obj.mesh.triangles, 3))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 3))->texCoords[1] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 3))->texCoords[2] = (vec3u){ .x = 1, .y = 1, .z = 1 };
+																						
+	((triangle*)vector_get(&obj.mesh.triangles, 4))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 4))->texCoords[1] = (vec3u){ .x = 0, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 4))->texCoords[2] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+
+	((triangle*)vector_get(&obj.mesh.triangles, 5))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 5))->texCoords[1] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 5))->texCoords[2] = (vec3u){ .x = 1, .y = 1, .z = 1 };
+																						  
+	((triangle*)vector_get(&obj.mesh.triangles, 6))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 6))->texCoords[1] = (vec3u){ .x = 0, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 6))->texCoords[2] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+
+	((triangle*)vector_get(&obj.mesh.triangles, 7))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 7))->texCoords[1] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 7))->texCoords[2] = (vec3u){ .x = 1, .y = 1, .z = 1 };
+
+	((triangle*)vector_get(&obj.mesh.triangles, 8))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 8))->texCoords[1] = (vec3u){ .x = 0, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 8))->texCoords[2] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+
+	((triangle*)vector_get(&obj.mesh.triangles, 9))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 9))->texCoords[1] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 9))->texCoords[2] = (vec3u){ .x = 1, .y = 1, .z = 1 };
+
+	((triangle*)vector_get(&obj.mesh.triangles, 10))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 10))->texCoords[1] = (vec3u){ .x = 0, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 10))->texCoords[2] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+
+	((triangle*)vector_get(&obj.mesh.triangles, 11))->texCoords[0] = (vec3u){ .x = 0, .y = 1, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 11))->texCoords[1] = (vec3u){ .x = 1, .y = 0, .z = 1 };
+	((triangle*)vector_get(&obj.mesh.triangles, 11))->texCoords[2] = (vec3u){ .x = 1, .y = 1, .z = 1 };
 
 	//obj = object_create_with_color("ship.obj", FG_BLUE);
 	//obj.transform.position = (vec3){ 0, 50, 0};
@@ -56,12 +106,9 @@ bool game_setup(engine* e) {
 	update_camera();
 	shouldUpdateView = true;
 
-	e->drawMode = DM_WIREFRAME;
+	e->drawMode = DM_SOLID;
 	e->wireColor = FG_WHITE;
 	e->cullMode = FC_BACK;
-
-	texture testTex = texture_create_from_file("simple.tex");
-	texture_destroy(&testTex);
 
 	return true;
 }
@@ -224,7 +271,7 @@ void render_objects(engine* e) {
 	for (size_t o = 0; o < objects.length; o++) {
 		object* obj = (object*)vector_get(&objects, o);
 		for (size_t i = 0; i < obj->mesh.triangles.length; i++) {
-			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&obj->mesh.triangles, i), &obj->mesh.matrix, true);
+			triangle modelTri = triangle_multiply_matrix(*(triangle*)vector_get(&obj->mesh.triangles, i), &obj->mesh.matrix);
 			vec3 line1 = vec3_sub(modelTri.points[1].v3, modelTri.points[0].v3);
 			vec3 line2 = vec3_sub(modelTri.points[2].v3, modelTri.points[0].v3);
 			vec3 normal = vec3_cross(line1, line2);
@@ -237,9 +284,11 @@ void render_objects(engine* e) {
 				//CHAR_INFO c = grey_pixel(min(max(0.1f, dp), 0.99f));
 				CHAR_INFO c = color_for(min(max(0.1f, dp), 0.99f), obj->mesh.texture.data[0]);
 
-				triangle viewTri = triangle_multiply_matrix(modelTri, &viewMatrix, true);
+				triangle viewTri = triangle_multiply_matrix(modelTri, &viewMatrix);
 				viewTri.color = c.Attributes;
 				viewTri.symbol = c.Char.UnicodeChar;
+				viewTri.fragData.texture = &obj->mesh.texture;
+				viewTri.fragData.lightNormalDot = min(max(0.1f, dp), 0.99f);
 
 				triangle clipped[2] = { 0 };
 				linked_list clipQueue = { 0 };
@@ -284,7 +333,21 @@ void render_objects(engine* e) {
 					list_node* node = list_pop_front(&clipQueue);
 					triangle* clippedTri = (triangle*)&node->data;
 
-					triangle projTri = triangle_multiply_matrix(*clippedTri, &projectionMatrix, true);
+					triangle projTri = triangle_multiply_matrix(*clippedTri, &projectionMatrix);
+
+					projTri.texCoords[0].x = projTri.texCoords[0].x / projTri.points[0].w;
+					projTri.texCoords[1].x = projTri.texCoords[1].x / projTri.points[1].w;
+					projTri.texCoords[2].x = projTri.texCoords[2].x / projTri.points[2].w;
+
+					projTri.texCoords[0].y = projTri.texCoords[0].y / projTri.points[0].w;
+					projTri.texCoords[1].y = projTri.texCoords[1].y / projTri.points[1].w;
+					projTri.texCoords[2].y = projTri.texCoords[2].y / projTri.points[2].w;
+
+					projTri.texCoords[0].z = 1.0f / projTri.points[0].w;
+					projTri.texCoords[1].z = 1.0f / projTri.points[1].w;
+					projTri.texCoords[2].z = 1.0f / projTri.points[2].w;
+
+					triangle_scale_points(&projTri);
 
 					projTri.color = clippedTri->color;
 					projTri.symbol = clippedTri->symbol;
@@ -320,13 +383,11 @@ void render_objects(engine* e) {
 	for (size_t i = 0; i < rasterQueue.length; i++) {
 		triangle* t = vector_get(&rasterQueue, i);
 		if (e->drawMode & DM_SOLID)
-			console_fill_triangle(
-				e->console,
-				(int)(t->points[0].x), (int)(t->points[0].y),
-				(int)(t->points[1].x), (int)(t->points[1].y),
-				(int)(t->points[2].x), (int)(t->points[2].y),
-				t->symbol, t->color
-			);
+			textured_triangle(e->console,
+						 (int)(t->points[0].x), (int)(t->points[0].y), t->texCoords[0].x, t->texCoords[0].y, t->texCoords[0].z,
+						 (int)(t->points[1].x), (int)(t->points[1].y), t->texCoords[1].x, t->texCoords[1].y, t->texCoords[1].z,
+						 (int)(t->points[2].x), (int)(t->points[2].y), t->texCoords[2].x, t->texCoords[2].y, t->texCoords[2].z,
+						 t->fragData.texture, t->fragData.lightNormalDot);
 		if (e->drawMode & DM_WIREFRAME)
 			console_triangle(
 				e->console,
@@ -335,10 +396,180 @@ void render_objects(engine* e) {
 				(int)(t->points[2].x), (int)(t->points[2].y),
 				e->wireColor ? PX_SOLID : t->symbol,
 				e->wireColor ? e->wireColor : t->color
-			);
+			);			
 	}
 
 	vector_destroy(&rasterQueue);
+}
+
+void swapi(int* a, int* b) {
+	int t = *a;
+	*a = *b;
+	*b = t;
+}
+
+void swapf(float* a, float* b) {
+	float t = *a;
+	*a = *b;
+	*b = t;
+}
+
+void textured_triangle(console* c,
+					   int x1, int y1, float u1, float v1, float w1,
+					   int x2, int y2, float u2, float v2, float w2,
+					   int x3, int y3, float u3, float v3, float w3,
+					   texture* tex, float l) {
+	
+	if (y2 < y1) {
+		swapi(&y1, &y2);
+		swapi(&x1, &x2);
+		swapf(&u1, &u2);
+		swapf(&v1, &v2);
+		swapf(&w1, &w2);
+	}
+
+	if (y3 < y1) {
+		swapi(&y1, &y3);
+		swapi(&x1, &x3);
+		swapf(&u1, &u3);
+		swapf(&v1, &v3);
+		swapf(&w1, &w3);
+	}
+
+	if (y3 < y2) {
+		swapi(&y2, &y3);
+		swapi(&x2, &x3);
+		swapf(&u2, &u3);
+		swapf(&v2, &v3);
+		swapf(&w2, &w3);
+	}
+
+	int dy1 = y2 - y1;
+	int dx1 = x2 - x1;
+	float dv1 = v2 - v1;
+	float du1 = u2 - u1;
+	float dw1 = w2 - w1;
+
+	int dy2 = y3 - y1;
+	int dx2 = x3 - x1;
+	float dv2 = v3 - v1;
+	float du2 = u3 - u1;
+	float dw2 = w3 - w1;
+
+	float tex_u, tex_v, tex_w;
+
+	float dax_step = 0, dbx_step = 0,
+		du1_step = 0, dv1_step = 0,
+		du2_step = 0, dv2_step = 0,
+		dw1_step = 0, dw2_step = 0;
+
+	if (dy1) dax_step = dx1 / (float)abs(dy1);
+	if (dy2) dbx_step = dx2 / (float)abs(dy2);
+
+	if (dy1) du1_step = du1 / (float)abs(dy1);
+	if (dy1) dv1_step = dv1 / (float)abs(dy1);
+	if (dy1) dw1_step = dw1 / (float)abs(dy1);
+
+	if (dy2) du2_step = du2 / (float)abs(dy2);
+	if (dy2) dv2_step = dv2 / (float)abs(dy2);
+	if (dy2) dw2_step = dw2 / (float)abs(dy2);
+
+	if (dy1) 		{
+		for (int i = y1; i <= y2; i++) 			{
+			int ax = x1 + (float)(i - y1) * dax_step;
+			int bx = x1 + (float)(i - y1) * dbx_step;
+
+			float tex_su = u1 + (float)(i - y1) * du1_step;
+			float tex_sv = v1 + (float)(i - y1) * dv1_step;
+			float tex_sw = w1 + (float)(i - y1) * dw1_step;
+
+			float tex_eu = u1 + (float)(i - y1) * du2_step;
+			float tex_ev = v1 + (float)(i - y1) * dv2_step;
+			float tex_ew = w1 + (float)(i - y1) * dw2_step;
+
+			if (ax > bx) 				{
+				swapi(&ax, &bx);
+				swapf(&tex_su, &tex_eu);
+				swapf(&tex_sv, &tex_ev);
+				swapf(&tex_sw, &tex_ew);
+			}
+
+			tex_u = tex_su;
+			tex_v = tex_sv;
+			tex_w = tex_sw;
+
+			float tstep = 1.0f / ((float)(bx - ax));
+			float t = 0.0f;
+
+			for (int j = ax; j <= bx; j++) 				{
+				tex_u = (1.0f - t) * tex_su + t * tex_eu;
+				tex_v = (1.0f - t) * tex_sv + t * tex_ev;
+				tex_w = (1.0f - t) * tex_sw + t * tex_ew;
+
+				WORD clr = texture_get_uv(tex, tex_u / tex_w, tex_v / tex_w);
+				CHAR_INFO chr = color_for(l, clr);
+				console_draw(c, j, i, chr.Char.UnicodeChar, chr.Attributes);
+
+				t += tstep;
+			}
+
+		}
+	}
+
+	dy1 = y3 - y2;
+	dx1 = x3 - x2;
+	dv1 = v3 - v2;
+	du1 = u3 - u2;
+	dw1 = w3 - w2;
+
+	if (dy1) dax_step = dx1 / (float)abs(dy1);
+	if (dy2) dbx_step = dx2 / (float)abs(dy2);
+
+	du1_step = 0, dv1_step = 0;
+	if (dy1) du1_step = du1 / (float)abs(dy1);
+	if (dy1) dv1_step = dv1 / (float)abs(dy1);
+	if (dy1) dw1_step = dw1 / (float)abs(dy1);
+
+	if (dy1) {
+		for (int i = y2; i <= y3; i++) {
+			int ax = x2 + (float)(i - y2) * dax_step;
+			int bx = x1 + (float)(i - y1) * dbx_step;
+
+			float tex_su = u2 + (float)(i - y2) * du1_step;
+			float tex_sv = v2 + (float)(i - y2) * dv1_step;
+			float tex_sw = w2 + (float)(i - y2) * dw1_step;
+
+			float tex_eu = u1 + (float)(i - y1) * du2_step;
+			float tex_ev = v1 + (float)(i - y1) * dv2_step;
+			float tex_ew = w1 + (float)(i - y1) * dw2_step;
+
+			if (ax > bx) {
+				swapi(&ax, &bx);
+				swapf(&tex_su, &tex_eu);
+				swapf(&tex_sv, &tex_ev);
+				swapf(&tex_sw, &tex_ew);
+			}
+
+			tex_u = tex_su;
+			tex_v = tex_sv;
+			tex_w = tex_sw;
+
+			float tstep = 1.0f / ((float)(bx - ax));
+			float t = 0.0f;
+
+			for (int j = ax; j <= bx; j++) 				{
+				tex_u = (1.0f - t) * tex_su + t * tex_eu;
+				tex_v = (1.0f - t) * tex_sv + t * tex_ev;
+				tex_w = (1.0f - t) * tex_sw + t * tex_ew;
+
+				WORD clr = texture_get_uv(tex, tex_u / tex_w, tex_v / tex_w);
+				CHAR_INFO chr = color_for(l, clr);
+				console_draw(c, j, i, chr.Char.UnicodeChar, chr.Attributes);
+
+				t += tstep;
+			}
+		}
+	}
 }
 
 void game_teardown(engine* e) {
